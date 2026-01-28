@@ -19,6 +19,22 @@ React junto con Vite permite un entorno de desarrollo moderno, rápido y eficien
 
 ---
 
+## ⚙️ Variables de Entorno
+
+El proyecto utiliza variables de entorno para la configuración de servicios externos. Estas variables deben definirse en un archivo `.env` ubicado en la raíz del proyecto.
+
+### Variables requeridas
+
+```env
+VITE_ALONDRA_BACKEND_URL=
+```
+
+Esta variable corresponde a la URL base del backend con el cual la aplicación se comunica para la gestión de reservas.
+
+> ⚠️ **Nota:** Asegúrate de no subir el archivo `.env` al repositorio. Debe estar incluido en el `.gitignore`.
+
+---
+
 ## 🚀 Ejecución del Proyecto
 
 Sigue los pasos a continuación para ejecutar el proyecto en un entorno local:
