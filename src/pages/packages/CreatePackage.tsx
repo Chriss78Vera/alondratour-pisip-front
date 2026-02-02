@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, Plus, X, CheckCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -23,34 +23,40 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
     description: '',
     fechaInicio: '',
     fechaFin: '',
-    precioNeto: '',
   });
 
-  const [hotels, setHotels] = useState<string[]>([]);
+  type HotelEntry = { nombre: string; precio: string };
+  const [hotels, setHotels] = useState<HotelEntry[]>([]);
   const [currentHotel, setCurrentHotel] = useState('');
+  const [currentPrecio, setCurrentPrecio] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const isHotelPrecioValid = (p: string) => p.trim() !== '' && !Number.isNaN(Number(p.replace(/,/g, '.'))) && Number(p.replace(/,/g, '.')) >= 0;
   const isFormValid =
     formData.country &&
     formData.city &&
     formData.name &&
     formData.fechaInicio &&
     formData.fechaFin &&
-    formData.precioNeto.trim() !== '' &&
-    !Number.isNaN(Number(formData.precioNeto)) &&
-    hotels.length > 0;
+    hotels.length > 0 &&
+    hotels.every((h) => h.nombre.trim() && isHotelPrecioValid(h.precio));
 
   const handleAddHotel = () => {
-    if (currentHotel.trim() && !hotels.includes(currentHotel.trim())) {
-      setHotels([...hotels, currentHotel.trim()]);
+    if (currentHotel.trim() && isHotelPrecioValid(currentPrecio)) {
+      setHotels([...hotels, { nombre: currentHotel.trim(), precio: currentPrecio.trim() }]);
       setCurrentHotel('');
+      setCurrentPrecio('');
     }
   };
 
-  const handleRemoveHotel = (hotel: string) => {
-    setHotels(hotels.filter(h => h !== hotel));
+  const handleRemoveHotel = (index: number) => {
+    setHotels(hotels.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateHotelPrecio = (index: number, precio: string) => {
+    setHotels(hotels.map((h, i) => (i === index ? { ...h, precio } : h)));
   };
 
   const handleSubmit = async () => {
@@ -58,19 +64,20 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
     setSubmitError(null);
     setSubmitting(true);
     try {
-      const precio = Number(formData.precioNeto.replace(/,/g, '.'));
-
-      // Paso 1: crear paquetes-detalles
+      // Paso 1: crear paquetes-detalles (sin precio; el precio va en cada hotel)
       const detalle = await createPaquetesDetalles({
         fechaInicio: formData.fechaInicio,
         fechaFin: formData.fechaFin,
-        precioNeto: precio,
       });
       const idPaquetesDetalles = detalle.idPaquetesDetalles;
 
-      // Paso 2: crear cada hotel
-      for (const nombre of hotels) {
-        await createHotel({ idPaquetesDetalles, nombre });
+      // Paso 2: crear cada hotel con nombre y precio
+      for (const h of hotels) {
+        await createHotel({
+          idPaquetesDetalles,
+          nombre: h.nombre,
+          precio: Number(h.precio.replace(/,/g, '.')),
+        });
       }
 
       // Paso 3: crear el paquete
@@ -114,7 +121,7 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
               </label>
               <Input
                 type="text"
-                placeholder="Ej: España"
+                placeholder="Ej: Ecuador"
                 value={formData.country}
                 onChange={(e) => setFormData({ ...formData, country: e.target.value })}
                 className="border-gray-300 bg-white"
@@ -127,7 +134,7 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
               </label>
               <Input
                 type="text"
-                placeholder="Ej: Barcelona"
+                placeholder="Ej: Quito"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                 className="border-gray-300 bg-white"
@@ -141,7 +148,7 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
             </label>
             <Input
               type="text"
-              placeholder="Ej: Barcelona Experience"
+              placeholder="Ej: Paquete Quito Experience"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="border-gray-300 bg-white"
@@ -186,21 +193,6 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
             </div>
           </div>
 
-          <div>
-            <label className="block mb-2 text-gray-700">
-              Precio neto <span className="text-red-500">*</span>
-            </label>
-            <Input
-              type="number"
-              placeholder="Ej: 1500000"
-              value={formData.precioNeto}
-              onChange={(e) => setFormData({ ...formData, precioNeto: e.target.value })}
-              className="border-gray-300 bg-white"
-              min={0}
-              step={0.01}
-            />
-          </div>
-
           {submitError && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {submitError}
@@ -211,14 +203,14 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
             <label className="block mb-2 text-gray-700">
               Hoteles <span className="text-red-500">*</span>
             </label>
-            <p className="text-sm text-gray-500 mb-3">Ingresa manualmente los hoteles incluidos en este paquete</p>
-            
-            {/* Add Hotel Input */}
-            <div className="mb-4">
-              <div className="flex gap-2">
+            <p className="text-sm text-gray-500 mb-3">Agregue los hoteles del paquete con nombre y precio por hotel</p>
+
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
+              <div className="sm:col-span-5">
+                <label className="block mb-1 text-sm text-gray-600">Nombre del hotel</label>
                 <Input
                   type="text"
-                  placeholder="Nombre del hotel"
+                  placeholder="Ej: Hotel Playa Dorada"
                   value={currentHotel}
                   onChange={(e) => setCurrentHotel(e.target.value)}
                   onKeyPress={(e) => {
@@ -227,13 +219,27 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
                       handleAddHotel();
                     }
                   }}
-                  className="border-gray-300 bg-white flex-1"
+                  className="border-gray-300 bg-white"
                 />
+              </div>
+              <div className="sm:col-span-4">
+                <label className="block mb-1 text-sm text-gray-600">Precio</label>
+                <Input
+                  type="number"
+                  placeholder="Ej: 150000"
+                  value={currentPrecio}
+                  onChange={(e) => setCurrentPrecio(e.target.value)}
+                  min={0}
+                  step={1}
+                  className="border-gray-300 bg-white"
+                />
+              </div>
+              <div className="sm:col-span-3">
                 <Button
                   onClick={handleAddHotel}
                   type="button"
-                  className="bg-[#1e40af] hover:bg-[#1e3a8a] text-white"
-                  disabled={!currentHotel.trim()}
+                  className="bg-[#1e40af] hover:bg-[#1e3a8a] text-white w-full"
+                  disabled={!currentHotel.trim() || !isHotelPrecioValid(currentPrecio)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar
@@ -241,25 +247,35 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
               </div>
             </div>
 
-            {/* Selected Hotels */}
             {hotels.length > 0 && (
               <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <p className="text-sm text-[#1e40af] mb-3">Hoteles agregados ({hotels.length}):</p>
                 <div className="space-y-2">
-                  {hotels.map((hotel) => (
+                  {hotels.map((hotel, index) => (
                     <div
-                      key={hotel}
-                      className="flex items-center justify-between bg-white p-3 rounded border border-blue-200"
+                      key={index}
+                      className="flex flex-wrap items-center justify-between gap-2 bg-white p-3 rounded border border-blue-200"
                     >
-                      <span className="text-gray-700">{hotel}</span>
-                      <Button
-                        onClick={() => handleRemoveHotel(hotel)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <span className="text-gray-700 font-medium">{hotel.nombre}</span>
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-gray-600">Precio:</label>
+                        <Input
+                          type="number"
+                          value={hotel.precio}
+                          onChange={(e) => handleUpdateHotelPrecio(index, e.target.value)}
+                          min={0}
+                          step={1}
+                          className="border-gray-300 bg-white w-32"
+                        />
+                        <Button
+                          onClick={() => handleRemoveHotel(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

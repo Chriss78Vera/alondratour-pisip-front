@@ -1,0 +1,91 @@
+import { apiGet, apiPost } from '../apiconfig';
+
+/** Agencia anidada en la respuesta GET /api/reservas */
+export interface ReservaAgencia {
+  idAgencia: number;
+  nombre: string;
+  email: string;
+  telefono: string;
+}
+
+/** Paquete anidado en la respuesta GET /api/reservas */
+export interface ReservaPaquete {
+  idPaquete: number;
+  idPaquetesDetalles: number;
+  nombre: string;
+  descripcion: string;
+  pais: string;
+  ciudad: string;
+}
+
+/** Vuelo anidado en la respuesta GET /api/reservas */
+export interface ReservaVuelo {
+  idVuelo: number;
+  aerolinea: string;
+  origen: string;
+  destino: string;
+  fechaSalida: string;
+  fechaLlegada: string;
+  fechaExtraSalida: string | null;
+  fechaExtraLlegada: string | null;
+}
+
+/** Item devuelto por GET /api/reservas (listado con detalles) */
+export interface ReservaConDetalles {
+  idReserva: number;
+  idUsuario: number;
+  fechaReserva: string;
+  costoTotal: number;
+  estado: boolean;
+  agencia: ReservaAgencia;
+  paquete: ReservaPaquete;
+  vuelo: ReservaVuelo;
+}
+
+/**
+ * Lista todas las reservas.
+ * GET /api/reservas
+ */
+export async function getReservas(): Promise<ReservaConDetalles[]> {
+  const data = await apiGet<ReservaConDetalles[]>('reservas');
+  return Array.isArray(data) ? data : [];
+}
+
+export interface ReservaCreateInput {
+  idReserva: number;
+  idUsuario: number;
+  idVuelo: number;
+  idPaquete: number;
+  idAgencia: number;
+  fechaReserva: string;
+  costoTotal: number;
+  estado: boolean;
+}
+
+export interface Reserva {
+  idReserva: number;
+  idUsuario: number;
+  idVuelo: number;
+  idPaquete: number;
+  idAgencia: number;
+  fechaReserva: string;
+  costoTotal: number;
+  estado: boolean;
+}
+
+/**
+ * Crea una reserva.
+ * POST /api/reservas
+ */
+export async function createReserva(input: Omit<ReservaCreateInput, 'idReserva'>): Promise<Reserva> {
+  return apiPost<Reserva>('reservas', {
+    idReserva: 0,
+    idUsuario: input.idUsuario,
+    idVuelo: input.idVuelo,
+    idPaquete: input.idPaquete,
+    idAgencia: input.idAgencia,
+    fechaReserva: input.fechaReserva,
+    costoTotal: input.costoTotal,
+    estado: input.estado,
+  });
+}

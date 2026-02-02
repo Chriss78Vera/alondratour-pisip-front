@@ -5,12 +5,13 @@ Cada dominio de la API tiene su propia carpeta bajo `services/`, con el mismo pa
 ```
 services/
 ├── apiconfig.ts          # Configuración base de axios y helpers (apiGet, apiPost, etc.)
-├── paquetes/
-│   ├── paquetesService.ts   # Lógica y tipos del dominio
-│   └── index.ts             # Re-exporta lo público del servicio
-├── reservas/             # Ejemplo para futuros: mismo esquema
-│   ├── reservasService.ts
-│   └── index.ts
+├── oauth/                # Login, loginToken, logout, getToken
+├── usuarios/             # getUserInformation (GET auth/usuario?tokenAuth=...)
+├── paquetes/             # getAllPaquetes, getPaisesYCiudadesDistintos, buscarPaquetesPorPaisYCiudad, create*
+├── vuelos/               # createVuelo (POST vuelos)
+├── agencias/             # createAgencia (POST agencias)
+├── reservas/             # createReserva (POST reservas)
+├── pasajeros/            # createPasajero (POST pasajeros)
 └── ...
 ```
 
