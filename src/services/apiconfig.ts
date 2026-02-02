@@ -1,8 +1,17 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 
-// En desarrollo usamos /api para que Vite haga proxy a localhost:8080 y evite CORS
-const getBaseURL = () =>
-  import.meta.env.DEV ? '/api' : (import.meta.env.VITE_ALONDRA_BACKEND_URL || 'http://localhost:8080/api');
+// En desarrollo usamos /api para que el proxy de Vite envíe las peticiones al backend y evite CORS.
+// En producción se usa VITE_ALONDRA_BACKEND_URL del .env
+const getBaseURL = (): string => {
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  const envUrl = import.meta.env.VITE_ALONDRA_BACKEND_URL;
+  if (envUrl && typeof envUrl === 'string' && String(envUrl).trim() !== '') {
+    return String(envUrl).trim();
+  }
+  return 'http://localhost:8080/api';
+};
 
 const apiConfig: AxiosInstance = axios.create({
   baseURL: getBaseURL(),
@@ -33,9 +42,9 @@ apiConfig.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      // Manejar token expirado o no autorizado
+      // Token expirado o no autorizado: borramos token y recargamos para mostrar Login.
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.reload();
     }
     return Promise.reject(error);
   }
