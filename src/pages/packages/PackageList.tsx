@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, MapPin, Building2, Calendar, DollarSign } from 'lucide-react';
+import { Search, Plus, MapPin, Building2, Calendar } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
-import { getAllPaquetes, type Paquete } from '../../services/Paquetes';
+import { getAllPaquetes, type Paquete } from '../../services/paquetes';
 
 interface PackageListProps {
   onCreateNew: () => void;
@@ -145,10 +145,6 @@ export function PackageList({ onCreateNew }: PackageListProps) {
                       {pkg.paquetesDetalles.fechaInicio} — {pkg.paquetesDetalles.fechaFin}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-700 text-sm">
-                    <DollarSign className="h-4 w-4 text-[#60a5fa]" />
-                    <span>{formatPrecio(pkg.paquetesDetalles.precioNeto)}</span>
-                  </div>
                 </div>
               )}
 
@@ -162,6 +158,7 @@ export function PackageList({ onCreateNew }: PackageListProps) {
                     {pkg.hoteles.map((h) => (
                       <li key={h.idHotel} className="text-sm text-gray-600 pl-6">
                         • {h.nombre}
+                        {h.precio != null ? ` — ${formatPrecio(h.precio)}` : ''}
                       </li>
                     ))}
                   </ul>
