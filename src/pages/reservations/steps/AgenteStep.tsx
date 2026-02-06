@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Input } from '../../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { getAgencias, type Agencia } from '../../../services/agencias';
+import { AGENTE_AGREGAR_OTRA_VALUE } from '../../../utils/constants';
+import { isValidEmail, isValidTelefono, hasMinLength, MIN_TEXT_LENGTH, MIN_PHONE_DIGITS } from '../../../utils/validations';
 
 export interface AgentState {
   idAgencia?: number;
@@ -9,8 +11,6 @@ export interface AgentState {
   email: string;
   phone: string;
 }
-
-const AGREGAR_OTRA_VALUE = '__nueva__';
 
 interface AgenteStepProps {
   agent: AgentState;
@@ -31,7 +31,7 @@ export function AgenteStep({ agent, setAgent }: AgenteStepProps) {
   const hayAgencias = agencias.length > 0;
 
   const handleAgenciaChange = (value: string) => {
-    if (value === AGREGAR_OTRA_VALUE) {
+    if (value === AGENTE_AGREGAR_OTRA_VALUE) {
       setAgent({ name: '', email: '', phone: '' });
       return;
     }
@@ -54,7 +54,7 @@ export function AgenteStep({ agent, setAgent }: AgenteStepProps) {
         <div>
           <label className="block mb-2 text-gray-700">Agencia</label>
           <Select
-            value={agent.idAgencia != null ? String(agent.idAgencia) : AGREGAR_OTRA_VALUE}
+            value={agent.idAgencia != null ? String(agent.idAgencia) : AGENTE_AGREGAR_OTRA_VALUE}
             onValueChange={handleAgenciaChange}
             disabled={loadingAgencias}
           >
@@ -69,7 +69,7 @@ export function AgenteStep({ agent, setAgent }: AgenteStepProps) {
                   {a.nombre} — {a.email}
                 </SelectItem>
               ))}
-              <SelectItem value={AGREGAR_OTRA_VALUE}>Agregar otra</SelectItem>
+              <SelectItem value={AGENTE_AGREGAR_OTRA_VALUE}>Agregar otra</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -86,6 +86,11 @@ export function AgenteStep({ agent, setAgent }: AgenteStepProps) {
           onChange={(e) => setAgent({ ...agent, name: e.target.value })}
           className="border-gray-300 bg-white"
         />
+        {agent.name.trim() !== '' && !hasMinLength(agent.name) && (
+          <p className="mt-1 text-sm font-bold text-red-700">
+            El nombre debe tener al menos {MIN_TEXT_LENGTH} caracteres.
+          </p>
+        )}
       </div>
 
       <div>
@@ -99,19 +104,29 @@ export function AgenteStep({ agent, setAgent }: AgenteStepProps) {
           onChange={(e) => setAgent({ ...agent, email: e.target.value })}
           className="border-gray-300 bg-white"
         />
+        {agent.email.trim() !== '' && !isValidEmail(agent.email) && (
+          <p className="mt-1 text-sm font-bold text-red-700">
+            Ingrese un correo electrónico válido.
+          </p>
+        )}
       </div>
 
       <div>
         <label className="block mb-2 text-gray-700">
-          Teléfono <span className="text-red-500">*</span>
+          Teléfono / Celular <span className="text-red-500">*</span>
         </label>
         <Input
           type="tel"
-          placeholder="+593 999 999 999"
+          placeholder="Ej: 0999999999 (mín. 9 números)"
           value={agent.phone}
           onChange={(e) => setAgent({ ...agent, phone: e.target.value })}
           className="border-gray-300 bg-white"
         />
+        {agent.phone.trim() !== '' && !isValidTelefono(agent.phone) && (
+          <p className="mt-1 text-sm font-bold text-red-700">
+            El celular debe tener al menos {MIN_PHONE_DIGITS} dígitos y solo números.
+          </p>
+        )}
       </div>
     </div>
   );

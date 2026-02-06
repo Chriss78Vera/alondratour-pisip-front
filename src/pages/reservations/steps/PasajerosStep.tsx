@@ -3,6 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Pasajero } from './types';
+import { hasMinLength, isValidCedula, isValidFechaNacimiento, CEDULA_LENGTH } from '../../../utils/validations';
 
 interface PasajerosStepProps {
   passengers: Pasajero[];
@@ -56,6 +57,11 @@ export function PasajerosStep({
                 onChange={(e) => updatePassenger(index, 'nombre', e.target.value)}
                 className="border-gray-300 bg-white"
               />
+              {pasajero.nombre.trim() !== '' && !hasMinLength(pasajero.nombre) && (
+                <p className="mt-1 text-sm font-bold text-red-700">
+                  El nombre debe tener al menos 5 caracteres.
+                </p>
+              )}
             </div>
             <div>
               <label className="block mb-2 text-gray-700 text-sm">
@@ -68,6 +74,11 @@ export function PasajerosStep({
                 onChange={(e) => updatePassenger(index, 'apellido', e.target.value)}
                 className="border-gray-300 bg-white"
               />
+              {pasajero.apellido.trim() !== '' && !hasMinLength(pasajero.apellido) && (
+                <p className="mt-1 text-sm font-bold text-red-700">
+                  El apellido debe tener al menos 5 caracteres.
+                </p>
+              )}
             </div>
             <div>
               <label className="block mb-2 text-gray-700 text-sm">
@@ -75,11 +86,19 @@ export function PasajerosStep({
               </label>
               <Input
                 type="text"
-                placeholder="9876543210"
+                placeholder={`${CEDULA_LENGTH} dígitos`}
                 value={pasajero.cedula}
-                onChange={(e) => updatePassenger(index, 'cedula', e.target.value)}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/\D/g, '');
+                  if (v.length <= CEDULA_LENGTH) updatePassenger(index, 'cedula', v);
+                }}
                 className="border-gray-300 bg-white"
               />
+              {pasajero.cedula.trim() !== '' && !isValidCedula(pasajero.cedula) && (
+                <p className="mt-1 text-sm font-bold text-red-700">
+                  La cédula debe tener exactamente {CEDULA_LENGTH} dígitos (solo números).
+                </p>
+              )}
             </div>
             <div>
               <label className="block mb-2 text-gray-700 text-sm">
@@ -89,8 +108,18 @@ export function PasajerosStep({
                 type="date"
                 value={pasajero.fechaNacimiento}
                 onChange={(e) => updatePassenger(index, 'fechaNacimiento', e.target.value)}
+                max={new Date().toISOString().slice(0, 10)}
                 className="border-gray-300 bg-white"
               />
+              {pasajero.fechaNacimiento.trim() !== '' && (() => {
+                const res = isValidFechaNacimiento(pasajero.fechaNacimiento);
+                if (res.valid) return null;
+                return (
+                  <p className="mt-1 text-sm font-bold text-red-700">
+                    {res.error}
+                  </p>
+                );
+              })()}
             </div>
             <div className="sm:col-span-2 flex gap-6 items-center">
               <label className="flex items-center gap-2 cursor-pointer">

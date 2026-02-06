@@ -4,6 +4,7 @@ import type { Pasajero } from './types';
 import type { DestinationState } from './DestinoStep';
 import type { AgentState } from './AgenteStep';
 import type { VueloState } from './VuelosStep';
+import { formatPrecio } from '../../../utils/priceFormats';
 
 interface ConfirmacionStepProps {
   costoTotal: string;
@@ -14,10 +15,6 @@ interface ConfirmacionStepProps {
   vuelo: VueloState;
   agent: AgentState;
   passengers: Pasajero[];
-}
-
-function formatPrecio(n: number): string {
-  return new Intl.NumberFormat('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
 }
 
 export function ConfirmacionStep({
@@ -88,8 +85,8 @@ export function ConfirmacionStep({
       </div>
 
       {submitError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {submitError}
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+          <p className="font-bold text-red-700">{submitError}</p>
         </div>
       )}
 

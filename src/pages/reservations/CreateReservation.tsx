@@ -16,6 +16,15 @@ import { createAgencia } from '../../services/agencias';
 import { createReserva } from '../../services/reservas';
 import { createPasajero } from '../../services/pasajeros';
 import { createHotelReserva } from '../../services/hotelReserva';
+import { dateToYMD } from '../../utils/dateFormats';
+import {
+  hasMinLength,
+  isValidEmail,
+  isValidTelefono,
+  isValidCedula,
+  isValidFechaNacimiento,
+  isValidFechasVuelo,
+} from '../../utils/validations';
 import {
   DestinoStep,
   AgenteStep,
@@ -148,33 +157,41 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
     destination.startDate &&
     destination.endDate &&
     (!requiereHotel || !!destination.hotel);
-  const isStep2Valid = agent.name && agent.email && agent.phone;
+  const isStep2Valid =
+    hasMinLength(agent.name) &&
+    isValidEmail(agent.email) &&
+    isValidTelefono(agent.phone);
   const isStep3Valid =
     passengers.length >= 1 &&
     passengers.every(
       (p) =>
-        p.nombre.trim() &&
-        p.apellido.trim() &&
-        p.cedula.trim() &&
-        p.fechaNacimiento.trim()
+        hasMinLength(p.nombre) &&
+        hasMinLength(p.apellido) &&
+        isValidCedula(p.cedula) &&
+        p.fechaNacimiento.trim() !== '' &&
+        isValidFechaNacimiento(p.fechaNacimiento).valid
     );
   const isStep4Valid =
     vuelo.aerolinea.trim() &&
     vuelo.origen.trim() &&
     vuelo.fechaSalida &&
-    vuelo.fechaLlegada;
+    vuelo.fechaLlegada &&
+    isValidFechasVuelo(vuelo.fechaSalida, vuelo.fechaLlegada).valid;
   const isStep5Valid =
     costoTotal.trim() !== '' &&
     !Number.isNaN(Number(costoTotal.replace(/,/g, '.'))) &&
     Number(costoTotal.replace(/,/g, '.')) > 0;
 
   const addPassenger = () => setPassengers((prev) => [...prev, { ...pasajeroVacio }]);
+
   const removePassenger = (index: number) =>
     setPassengers((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+
   const updatePassenger = (index: number, field: keyof Pasajero, value: string | boolean) =>
     setPassengers((prev) =>
       prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
     );
+
 
   const handleNext = async () => {
     if (currentStep < steps.length - 1) {
@@ -203,10 +220,10 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
               telefono: agent.phone,
               email: agent.email,
             })).idAgencia;
-      const fechaReserva = new Date().toISOString().split('T')[0];
+      const fechaReserva = dateToYMD();
       const costo = Number(costoTotal.replace(/,/g, '.'));
       const reservaCreada = await createReserva({
-        idUsuario: userInfo.idUsuario,
+        idUsuario: userInfo.idUsuario, 
         idVuelo: vueloCreado.idVuelo,
         idPaquete: selectedPaqueteResumen.idPaquete,
         idAgencia: idAgenciaFinal,
@@ -292,8 +309,8 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
               <div className="flex justify-center mb-6">
                 <AlertCircle className="h-20 w-20 text-red-500" />
               </div>
-              <h2 className="text-red-700 mb-4">Error al Crear la Reserva</h2>
-              <p className="text-gray-600 mb-8">
+              <h2 className="font-bold text-red-700 mb-4">Error al Crear la Reserva</h2>
+              <p className="font-bold text-red-700 mb-8">
                 Ocurrió un error al procesar la reserva. Por favor, intenta nuevamente.
               </p>
             </>

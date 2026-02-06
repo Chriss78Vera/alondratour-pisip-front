@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { LogIn, FileText } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card } from '../../components/ui/card';
 import { login } from '../../services/oauth';
+
+const LOGO_IMAGE_URL =
+  'https://static.wixstatic.com/media/abb1dd_d7de3242580e481cbe35cd6e7c78943e~mv2.png/v1/fill/w_256,h_140,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Recurso%201.png';
 
 interface LoginProps {
   onLoginSuccess: () => void;
@@ -36,10 +39,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Cabecera alineada con el Layout */}
-      <header className="bg-[#1e3a8a] text-white py-6 px-8 border-b border-[#1e40af]">
-        <div className="flex items-center gap-2">
-          <FileText className="h-6 w-6" />
-          <h1 className="text-lg text-white">Gestión de Viajes</h1>
+      <header className="py-3 px-6">
+        <div className="flex items-center justify-start" style={{ width: '20%', maxHeight: '30%'}}>
+          <img
+            src={LOGO_IMAGE_URL}
+            alt="Gestión de Viajes"
+            style={{ width: '60%', height: '30%', objectFit: 'contain' }}
+          />
         </div>
       </header>
 
@@ -84,8 +90,8 @@ export function Login({ onLoginSuccess }: LoginProps) {
             </div>
 
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {error}
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+                <p className="font-bold text-red-700">{error}</p>
               </div>
             )}
 

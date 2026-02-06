@@ -10,6 +10,7 @@ import {
   createHotel,
   createPaquete,
 } from '../../services/paquetes';
+import { hasMinLength, isPrecioMayorQueCero, MIN_TEXT_LENGTH } from '../../utils/validations';
 
 interface CreatePackageProps {
   onBack: () => void;
@@ -33,18 +34,18 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const isHotelPrecioValid = (p: string) => p.trim() !== '' && !Number.isNaN(Number(p.replace(/,/g, '.'))) && Number(p.replace(/,/g, '.')) >= 0;
   const isFormValid =
     formData.country &&
     formData.city &&
-    formData.name &&
+    hasMinLength(formData.name) &&
+    (formData.description === '' || hasMinLength(formData.description)) &&
     formData.fechaInicio &&
     formData.fechaFin &&
     hotels.length > 0 &&
-    hotels.every((h) => h.nombre.trim() && isHotelPrecioValid(h.precio));
+    hotels.every((h) => hasMinLength(h.nombre) && isPrecioMayorQueCero(h.precio));
 
   const handleAddHotel = () => {
-    if (currentHotel.trim() && isHotelPrecioValid(currentPrecio)) {
+    if (hasMinLength(currentHotel) && isPrecioMayorQueCero(currentPrecio)) {
       setHotels([...hotels, { nombre: currentHotel.trim(), precio: currentPrecio.trim() }]);
       setCurrentHotel('');
       setCurrentPrecio('');
@@ -59,7 +60,30 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
     setHotels(hotels.map((h, i) => (i === index ? { ...h, precio } : h)));
   };
 
+  const getValidationError = (): string | null => {
+    if (!hasMinLength(formData.name)) {
+      return `El nombre del paquete debe tener al menos ${MIN_TEXT_LENGTH} caracteres.`;
+    }
+    if (formData.description.trim() !== '' && !hasMinLength(formData.description)) {
+      return `La descripción debe tener al menos ${MIN_TEXT_LENGTH} caracteres.`;
+    }
+    for (let i = 0; i < hotels.length; i++) {
+      if (!hasMinLength(hotels[i].nombre)) {
+        return `El nombre del hotel "${hotels[i].nombre || '(sin nombre)'}" debe tener al menos ${MIN_TEXT_LENGTH} caracteres.`;
+      }
+      if (!isPrecioMayorQueCero(hotels[i].precio)) {
+        return `El precio del hotel "${hotels[i].nombre}" debe ser mayor a 0.`;
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = async () => {
+    const validationError = getValidationError();
+    if (validationError) {
+      setSubmitError(validationError);
+      return;
+    }
     if (!isFormValid || submitting) return;
     setSubmitError(null);
     setSubmitting(true);
@@ -194,8 +218,8 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
           </div>
 
           {submitError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              {submitError}
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+              <p className="font-bold text-red-700">{submitError}</p>
             </div>
           )}
 
@@ -229,8 +253,8 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
                   placeholder="Ej: 150000"
                   value={currentPrecio}
                   onChange={(e) => setCurrentPrecio(e.target.value)}
-                  min={0}
-                  step={1}
+                  min={0.01}
+                  step={0.01}
                   className="border-gray-300 bg-white"
                 />
               </div>
@@ -239,7 +263,7 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
                   onClick={handleAddHotel}
                   type="button"
                   className="bg-[#1e40af] hover:bg-[#1e3a8a] text-white w-full"
-                  disabled={!currentHotel.trim() || !isHotelPrecioValid(currentPrecio)}
+                  disabled={!hasMinLength(currentHotel) || !isPrecioMayorQueCero(currentPrecio)}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Agregar
@@ -263,8 +287,8 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
                           type="number"
                           value={hotel.precio}
                           onChange={(e) => handleUpdateHotelPrecio(index, e.target.value)}
-                          min={0}
-                          step={1}
+                          min={0.01}
+                          step={0.01}
                           className="border-gray-300 bg-white w-32"
                         />
                         <Button

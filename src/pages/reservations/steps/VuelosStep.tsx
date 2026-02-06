@@ -1,4 +1,5 @@
 import { Input } from '../../../components/ui/input';
+import { isValidFechasVuelo } from '../../../utils/validations';
 
 export interface VueloState {
   aerolinea: string;
@@ -67,9 +68,11 @@ export function VuelosStep({ vuelo, setVuelo, destinoBloqueado }: VuelosStepProp
           <Input
             type="date"
             value={vuelo.fechaSalida}
+            min={new Date().toISOString().slice(0, 10)}
             onChange={(e) => setVuelo((prev) => ({ ...prev, fechaSalida: e.target.value }))}
             className="border-gray-300 bg-white"
           />
+          <p className="text-xs text-gray-500 mt-1">No puede ser anterior a la fecha actual</p>
         </div>
         <div>
           <label className="block mb-2 text-gray-700">
@@ -78,9 +81,24 @@ export function VuelosStep({ vuelo, setVuelo, destinoBloqueado }: VuelosStepProp
           <Input
             type="date"
             value={vuelo.fechaLlegada}
+            min={vuelo.fechaSalida ? (() => {
+              const d = new Date(vuelo.fechaSalida);
+              d.setDate(d.getDate() + 1);
+              return d.toISOString().slice(0, 10);
+            })() : new Date().toISOString().slice(0, 10)}
             onChange={(e) => setVuelo((prev) => ({ ...prev, fechaLlegada: e.target.value }))}
             className="border-gray-300 bg-white"
           />
+          <p className="text-xs text-gray-500 mt-1">Debe ser superior a la fecha de salida</p>
+          {vuelo.fechaSalida && vuelo.fechaLlegada && (() => {
+            const res = isValidFechasVuelo(vuelo.fechaSalida, vuelo.fechaLlegada);
+            if (res.valid) return null;
+            return (
+              <p className="mt-1 text-sm font-bold text-red-700">
+                {res.error}
+              </p>
+            );
+          })()}
         </div>
       </div>
     </div>

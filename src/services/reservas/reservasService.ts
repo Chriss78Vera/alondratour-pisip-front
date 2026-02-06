@@ -8,6 +8,15 @@ export interface ReservaAgencia {
   telefono: string;
 }
 
+/** Hotel en contexto de reserva (puede incluir fechas extra) */
+export interface ReservaPaqueteHotel {
+  idHotel: number;
+  nombre: string;
+  precio?: number;
+  fechaExtraChecking?: string | null;
+  fechaExtraCheckout?: string | null;
+}
+
 /** Paquete anidado en la respuesta GET /api/reservas */
 export interface ReservaPaquete {
   idPaquete: number;
@@ -16,6 +25,8 @@ export interface ReservaPaquete {
   descripcion: string;
   pais: string;
   ciudad: string;
+  estado?: boolean;
+  hoteles?: ReservaPaqueteHotel[];
 }
 
 /** Vuelo anidado en la respuesta GET /api/reservas */

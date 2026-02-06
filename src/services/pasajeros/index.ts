@@ -1,1 +1,6 @@
-export { createPasajero, type PasajeroCreateInput } from './pasajerosService';
+export {
+  createPasajero,
+  getPasajerosPorIdReserva,
+  type PasajeroCreateInput,
+  type PasajeroDetalle,
+} from './pasajerosService';

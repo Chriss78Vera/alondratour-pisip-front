@@ -6,6 +6,7 @@ export interface Hotel {
   idPaquetesDetalles: number;
   nombre: string;
   precio: number;
+  estado?: boolean;
 }
 
 /** Fechas del paquete (el precio va en cada hotel). No incluye hoteles. */
@@ -15,7 +16,7 @@ export interface PaquetesDetalles {
   fechaFin: string;
 }
 
-/** Paquete general: tiene paquetesDetalles y hoteles a nivel paquete */
+/** Paquete general: tiene paquetesDetalles y hoteles a nivel paquete. estado lo devuelve la API. */
 export interface Paquete {
   idPaquete: number;
   idPaquetesDetalles: number;
@@ -23,6 +24,7 @@ export interface Paquete {
   descripcion: string;
   pais: string;
   ciudad: string;
+  estado?: boolean;
   paquetesDetalles: PaquetesDetalles;
   hoteles: Hotel[];
 }
@@ -129,6 +131,7 @@ export async function createHotel(input: {
     idPaquetesDetalles: input.idPaquetesDetalles,
     nombre: input.nombre,
     precio: input.precio,
+    estado: true,
   });
 }
 
@@ -154,5 +157,25 @@ export async function createPaquete(input: Omit<PaqueteCreateInput, 'idPaquete'>
     descripcion: input.descripcion ?? '',
     pais: input.pais,
     ciudad: input.ciudad,
+    estado: true,
   });
+}
+
+/** Body de POST /api/paquetes/editar */
+export interface PaqueteEditarBody {
+  idPaquete: number;
+  idPaquetesDetalles: number;
+  nombre: string;
+  descripcion: string;
+  pais: string;
+  ciudad: string;
+  estado: boolean;
+}
+
+/**
+ * Edita un paquete (nombre, descripción, estado).
+ * POST /api/paquetes/editar
+ */
+export async function editarPaquete(body: PaqueteEditarBody): Promise<unknown> {
+  return apiPost('paquetes/editar', body);
 }
