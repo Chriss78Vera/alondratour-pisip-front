@@ -38,3 +38,23 @@ export async function createVuelo(input: Omit<VueloCreateInput, 'idVuelo'>): Pro
     fechaExtraLlegada: input.fechaExtraLlegada ?? null,
   });
 }
+
+/** Body para editar fechas extras del vuelo */
+export interface VueloEditarExtrasInput {
+  idVuelo: number;
+  aerolinea: string;
+  origen: string;
+  destino: string;
+  fechaSalida: string;
+  fechaLlegada: string;
+  fechaExtraSalida: string;
+  fechaExtraLlegada: string;
+}
+
+/**
+ * Actualiza las fechas extras de un vuelo.
+ * POST /api/vuelos/editarExtras
+ */
+export async function editarExtrasVuelo(input: VueloEditarExtrasInput): Promise<Vuelo> {
+  return apiPost<Vuelo>('vuelos/editarExtras', input);
+}

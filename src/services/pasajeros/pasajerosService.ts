@@ -1,4 +1,25 @@
-import { apiPost } from '../apiconfig';
+import { apiGet, apiPost } from '../apiconfig';
+
+/** Pasajero devuelto por GET /api/pasajeros/buscarPorIdReserva */
+export interface PasajeroDetalle {
+  idPasajero: number;
+  idReserva: number;
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  fechaNacimiento: string;
+  pasaporte: boolean;
+  visa: boolean;
+}
+
+/**
+ * Busca pasajeros por id de reserva.
+ * GET /api/pasajeros/buscarPorIdReserva?idReserva=
+ */
+export async function getPasajerosPorIdReserva(idReserva: number): Promise<PasajeroDetalle[]> {
+  const data = await apiGet<PasajeroDetalle[]>('pasajeros/buscarPorIdReserva', { idReserva });
+  return Array.isArray(data) ? data : [];
+}
 
 export interface PasajeroCreateInput {
   idPasajero: number;

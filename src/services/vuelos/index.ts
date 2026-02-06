@@ -1,1 +1,7 @@
-export { createVuelo, type Vuelo, type VueloCreateInput } from './vuelosService';
+export {
+  createVuelo,
+  editarExtrasVuelo,
+  type Vuelo,
+  type VueloCreateInput,
+  type VueloEditarExtrasInput,
+} from './vuelosService';
