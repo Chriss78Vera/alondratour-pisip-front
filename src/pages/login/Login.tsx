@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { LogIn, FileText } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card } from '../../components/ui/card';
 import { login } from '../../services/oauth';
+
+const LOGO_IMAGE_URL =
+  'https://static.wixstatic.com/media/abb1dd_d7de3242580e481cbe35cd6e7c78943e~mv2.png/v1/fill/w_256,h_140,al_c,q_85,usm_0.66_1.00_0.01,enc_avif,quality_auto/Recurso%201.png';
 
 interface LoginProps {
   onLoginSuccess: () => void;
 }
 
 export function Login({ onLoginSuccess }: LoginProps) {
-  const [cedula, setCedula] = useState('');
+  const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,13 +21,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!cedula.trim() || !password.trim()) {
-      setError('Ingrese cédula y contraseña.');
+    if (!correo.trim() || !password.trim()) {
+      setError('Ingrese correo electrónico y contraseña.');
       return;
     }
     setLoading(true);
     try {
-      await login(cedula.trim(), password);
+      await login(correo.trim(), password);
       onLoginSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión.');
@@ -36,10 +39,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Cabecera alineada con el Layout */}
-      <header className="bg-[#1e3a8a] text-white py-6 px-8 border-b border-[#1e40af]">
-        <div className="flex items-center gap-2">
-          <FileText className="h-6 w-6" />
-          <h1 className="text-lg text-white">Gestión de Viajes</h1>
+      <header className="py-3 px-6">
+        <div className="flex items-center justify-start" style={{ width: '20%', maxHeight: '30%'}}>
+          <img
+            src={LOGO_IMAGE_URL}
+            alt="Gestión de Viajes"
+            style={{ width: '60%', height: '30%', objectFit: 'contain' }}
+          />
         </div>
       </header>
 
@@ -50,21 +56,21 @@ export function Login({ onLoginSuccess }: LoginProps) {
             <h2 className="text-xl font-semibold text-[#1e40af]">Iniciar sesión</h2>
           </div>
           <p className="text-gray-600 text-sm mb-6">
-            Ingrese su cédula y contraseña para acceder a la plataforma.
+            Ingrese su correo electrónico y contraseña para acceder a la plataforma.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block mb-2 text-gray-700 text-sm font-medium">
-                Cédula <span className="text-red-500">*</span>
+                Correo electrónico <span className="text-red-500">*</span>
               </label>
               <Input
-                type="text"
-                placeholder="Cédula"
-                value={cedula}
-                onChange={(e) => setCedula(e.target.value)}
+                type="email"
+                placeholder="ejemplo@correo.com"
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
                 className="border-gray-300 bg-white"
-                autoComplete="username"
+                autoComplete="email"
                 disabled={loading}
               />
             </div>
@@ -84,8 +90,8 @@ export function Login({ onLoginSuccess }: LoginProps) {
             </div>
 
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                {error}
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+                <p className="font-bold text-red-700">{error}</p>
               </div>
             )}
 

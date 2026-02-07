@@ -6,6 +6,7 @@ export interface Hotel {
   idPaquetesDetalles: number;
   nombre: string;
   precio: number;
+  estado?: boolean;
 }
 
 /** Fechas del paquete (el precio va en cada hotel). No incluye hoteles. */
@@ -15,7 +16,7 @@ export interface PaquetesDetalles {
   fechaFin: string;
 }
 
-/** Paquete general: tiene paquetesDetalles y hoteles a nivel paquete */
+/** Paquete general: tiene paquetesDetalles y hoteles a nivel paquete. estado lo devuelve la API. */
 export interface Paquete {
   idPaquete: number;
   idPaquetesDetalles: number;
@@ -23,6 +24,7 @@ export interface Paquete {
   descripcion: string;
   pais: string;
   ciudad: string;
+  estado?: boolean;
   paquetesDetalles: PaquetesDetalles;
   hoteles: Hotel[];
 }
@@ -36,7 +38,7 @@ export async function getAllPaquetes(): Promise<Paquete[]> {
   return Array.isArray(data) ? data : [];
 }
 
-/** Respuesta de GET /api/paquetes/paisesYCiudadesDistintos */
+/** Respuesta de GET /api/paquetes/paisesYCiudadesDistintos (formato anterior) */
 export interface PaisesYCiudadesDistintosResponse {
   paises: string[];
   ciudades: string[];
@@ -52,6 +54,28 @@ export async function getPaisesYCiudadesDistintos(): Promise<PaisesYCiudadesDist
     paises: Array.isArray(data?.paises) ? data.paises : [],
     ciudades: Array.isArray(data?.ciudades) ? data.ciudades : [],
   };
+}
+
+/** Ciudad dentro de un país (para reservas) */
+export interface CiudadDestino {
+  idCiudad: number;
+  nombre: string;
+}
+
+/** País con sus ciudades (respuesta del servicio de destinos para reservas) */
+export interface PaisConCiudades {
+  idPais: number;
+  pais: string;
+  ciudades: CiudadDestino[];
+}
+
+/**
+ * Obtiene países con sus ciudades para el paso de destino en reservas.
+ * GET /api/paquetes/paisesYCiudadesDistintos (respuesta: array de PaisConCiudades)
+ */
+export async function getPaisesConCiudades(): Promise<PaisConCiudades[]> {
+  const data = await apiGet<PaisConCiudades[]>('paquetes/paisesYCiudadesDistintos');
+  return Array.isArray(data) ? data : [];
 }
 
 /**
@@ -70,16 +94,16 @@ export interface PaqueteResumen {
 }
 
 /**
- * Busca paquetes por país y ciudad para el selector de paquetes.
- * GET /api/paquetes/buscarPorPaisYCiudad
+ * Busca paquetes por id de país e id de ciudad.
+ * GET /api/paquetes/buscarPorPaisYCiudad?idPais={idPais}&idCiudad={idCiudad}
  */
 export async function buscarPaquetesPorPaisYCiudad(
-  pais: string,
-  ciudad: string
+  idPais: number,
+  idCiudad: number
 ): Promise<PaqueteResumen[]> {
   const data = await apiGet<PaqueteResumen[]>('paquetes/buscarPorPaisYCiudad', {
-    pais,
-    ciudad,
+    idPais,
+    idCiudad,
   });
   return Array.isArray(data) ? data : [];
 }
@@ -129,6 +153,7 @@ export async function createHotel(input: {
     idPaquetesDetalles: input.idPaquetesDetalles,
     nombre: input.nombre,
     precio: input.precio,
+    estado: true,
   });
 }
 
@@ -138,8 +163,9 @@ export interface PaqueteCreateInput {
   idPaquetesDetalles: number;
   nombre: string;
   descripcion: string;
-  pais: string;
-  ciudad: string;
+  idPais: number;
+  idCiudad: number;
+  estado: boolean;
 }
 
 /**
@@ -152,7 +178,27 @@ export async function createPaquete(input: Omit<PaqueteCreateInput, 'idPaquete'>
     idPaquetesDetalles: input.idPaquetesDetalles,
     nombre: input.nombre,
     descripcion: input.descripcion ?? '',
-    pais: input.pais,
-    ciudad: input.ciudad,
+    idPais: input.idPais,
+    idCiudad: input.idCiudad,
+    estado: input.estado ?? true,
   });
+}
+
+/** Body de POST /api/paquetes/editar */
+export interface PaqueteEditarBody {
+  idPaquete: number;
+  idPaquetesDetalles: number;
+  nombre: string;
+  descripcion: string;
+  pais: string;
+  ciudad: string;
+  estado: boolean;
+}
+
+/**
+ * Edita un paquete (nombre, descripción, estado).
+ * POST /api/paquetes/editar
+ */
+export async function editarPaquete(body: PaqueteEditarBody): Promise<unknown> {
+  return apiPost('paquetes/editar', body);
 }

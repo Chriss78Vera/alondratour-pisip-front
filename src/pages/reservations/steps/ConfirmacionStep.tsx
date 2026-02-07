@@ -1,9 +1,10 @@
 import { Input } from '../../../components/ui/input';
-import type { PaqueteResumen } from '../../../services/paquetes';
+import type { PaqueteResumen, Hotel } from '../../../services/paquetes';
 import type { Pasajero } from './types';
 import type { DestinationState } from './DestinoStep';
 import type { AgentState } from './AgenteStep';
 import type { VueloState } from './VuelosStep';
+import { formatPrecio } from '../../../utils/priceFormats';
 
 interface ConfirmacionStepProps {
   costoTotal: string;
@@ -16,10 +17,6 @@ interface ConfirmacionStepProps {
   passengers: Pasajero[];
 }
 
-function formatPrecio(n: number): string {
-  return new Intl.NumberFormat('es', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
-}
-
 export function ConfirmacionStep({
   costoTotal,
   setCostoTotal,
@@ -30,17 +27,20 @@ export function ConfirmacionStep({
   agent,
   passengers,
 }: ConfirmacionStepProps) {
-  const selectedHotel = destination.hotel && selectedPaqueteResumen?.hoteles
-    ? selectedPaqueteResumen.hoteles.find((h) => String(h.idHotel) === destination.hotel)
-    : null;
+  const selectedHotels =
+    destination.hotelesReserva?.length && selectedPaqueteResumen?.hoteles
+      ? destination.hotelesReserva
+          .map((hr) => selectedPaqueteResumen!.hoteles!.find((h: Hotel) => String(h.idHotel) === hr.idHotel))
+          .filter(Boolean) as Hotel[]
+      : [];
+  const precioHotel = selectedHotels.reduce((sum, h) => sum + (h?.precio ?? 0), 0);
   const totalNum = costoTotal.trim() !== '' && !Number.isNaN(Number(costoTotal.replace(/,/g, '.')))
     ? Number(costoTotal.replace(/,/g, '.'))
     : 0;
-  const precioHotel = selectedHotel?.precio ?? 0;
   const resto = Math.max(0, totalNum - precioHotel);
 
   const handleCostoChange = (value: string) => {
-    if (selectedHotel != null) {
+    if (selectedHotels.length > 0) {
       const num = value.trim() === '' || Number.isNaN(Number(value.replace(/,/g, '.')))
         ? 0
         : Number(value.replace(/,/g, '.'));
@@ -50,7 +50,7 @@ export function ConfirmacionStep({
     }
   };
 
-  const inputValue = selectedHotel != null ? String(Math.round(resto)) : costoTotal;
+  const inputValue = selectedHotels.length > 0 ? String(Math.round(resto)) : costoTotal;
 
   return (
     <div className="space-y-6">
@@ -58,26 +58,33 @@ export function ConfirmacionStep({
 
       <div>
         <label className="block mb-2 text-gray-700">
-          {selectedHotel ? 'Resto / Otros costos' : 'Costo total'} <span className="text-red-500">*</span>
+          {selectedHotels.length > 0 ? 'Resto / Otros costos' : 'Costo total'} <span className="text-red-500">*</span>
         </label>
         <Input
           type="number"
-          placeholder={selectedHotel ? 'Ej: 1300' : 'Ej: 2500000'}
+          placeholder={selectedHotels.length > 0 ? 'Ej: 1300' : 'Ej: 2500000'}
           value={inputValue}
           onChange={(e) => handleCostoChange(e.target.value)}
           className="border-gray-300 bg-white max-w-xs"
           min={0}
           step={0.01}
         />
-        {selectedHotel && (
+        {selectedHotels.length > 0 && (
           <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/50 p-4 max-w-xs">
-            <p className="text-sm text-[#1e40af] font-medium mb-2">Hotel seleccionado</p>
-            <p className="text-gray-700 text-sm">
-              {selectedHotel.nombre} — {formatPrecio(precioHotel)}
-            </p>
-            <div className="mt-3 pt-3 border-t border-blue-200 text-sm">
+            <p className="text-sm text-[#1e40af] font-medium mb-2">Hoteles ({selectedHotels.length})</p>
+            <ul className="text-gray-700 text-sm space-y-1 mb-3">
+              {destination.hotelesReserva?.map((hr) => {
+                const h = selectedPaqueteResumen?.hoteles?.find((x: Hotel) => String(x.idHotel) === hr.idHotel);
+                return h ? (
+                  <li key={hr.idHotel}>
+                    {h.nombre} — {formatPrecio(h.precio)} | Check-in: {hr.fechaCheckin} | Check-out: {hr.fechaCheckout}
+                  </li>
+                ) : null;
+              })}
+            </ul>
+            <div className="pt-3 border-t border-blue-200 text-sm">
               <p className="text-gray-700">
-                Precio hotel: {formatPrecio(precioHotel)} + Resto: {formatPrecio(resto)}
+                Precio hoteles: {formatPrecio(precioHotel)} + Resto: {formatPrecio(resto)}
               </p>
               <p className="text-[#1e40af] font-medium mt-1">
                 = Total: {formatPrecio(totalNum)}
@@ -88,8 +95,8 @@ export function ConfirmacionStep({
       </div>
 
       {submitError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          {submitError}
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm">
+          <p className="font-bold text-red-700">{submitError}</p>
         </div>
       )}
 
@@ -105,7 +112,9 @@ export function ConfirmacionStep({
           <h4 className="text-[#1e40af] mb-2">Vuelo</h4>
           <p className="text-gray-700">{vuelo.aerolinea}</p>
           <p className="text-sm text-gray-600">
-            {vuelo.origen} → {destination.country} | Salida: {vuelo.fechaSalida} | Llegada: {vuelo.fechaLlegada}
+            {vuelo.origenCiudadNombre && vuelo.origenPaisNombre
+              ? `${vuelo.origenCiudadNombre}, ${vuelo.origenPaisNombre}`
+              : 'Origen'} → {destination.city}, {destination.country} | Salida: {vuelo.fechaSalida} | Llegada: {vuelo.fechaLlegada}
           </p>
         </div>
 

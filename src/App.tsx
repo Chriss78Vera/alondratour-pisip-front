@@ -4,15 +4,18 @@ import { ReservationList } from './pages/reservations/ReservationList';
 import { CreateReservation } from './pages/reservations/CreateReservation';
 import { PackageList } from './pages/packages/PackageList';
 import { CreatePackage } from './pages/packages/CreatePackage';
+import { UserList } from './pages/usuarios/UserList';
 import { Login } from './pages/login/Login';
 import { getToken, loginToken } from './services/oauth';
+import { getUserInformation } from './services/usuarios';
 
-type Page = 'home' | 'packages';
+type Page = 'home' | 'packages' | 'usuarios';
 type View = 'list' | 'create';
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [userRol, setUserRol] = useState<string | null>(null);
 
   const [currentPage, setCurrentPage] = useState<Page>('home');
   const [currentView, setCurrentView] = useState<View>('list');
@@ -24,19 +27,28 @@ export default function App() {
       return;
     }
     loginToken(token)
-      .then(() => setAuthenticated(true))
+      .then(() => {
+        setAuthenticated(true);
+        return getUserInformation(token);
+      })
+      .then((info) => setUserRol(info.rol ?? null))
       .catch(() => setAuthenticated(false))
       .finally(() => setAuthChecked(true));
   }, []);
 
   const handleLoginSuccess = useCallback(() => {
     setAuthenticated(true);
+    const token = getToken();
+    if (token) {
+      getUserInformation(token).then((info) => setUserRol(info.rol ?? null));
+    }
   }, []);
 
   const handleLogout = useCallback(async () => {
     const { logout } = await import('./services/oauth');
     await logout();
     setAuthenticated(false);
+    setUserRol(null);
   }, []);
 
   const handleNavigate = (page: Page) => {
@@ -59,13 +71,19 @@ export default function App() {
       ) : (
         <CreateReservation onBack={handleBackToList} />
       );
-    } else {
+    }
+    if (currentPage === 'packages') {
       return currentView === 'list' ? (
         <PackageList onCreateNew={handleCreateNew} />
       ) : (
         <CreatePackage onBack={handleBackToList} />
       );
     }
+    if (currentPage === 'usuarios') {
+      if (userRol !== 'Admin') return null;
+      return <UserList />;
+    }
+    return null;
   };
 
   if (!authChecked) {
@@ -81,6 +99,13 @@ export default function App() {
   }
 
   return (
-    <Layout currentPage={currentPage} onNavigate={handleNavigate} onLogout={handleLogout} children={renderContent()} />
+    <Layout
+      currentPage={currentPage}
+      onNavigate={handleNavigate}
+      onLogout={handleLogout}
+      userRol={userRol}
+    >
+      {renderContent()}
+    </Layout>
   );
 }

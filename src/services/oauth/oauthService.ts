@@ -2,7 +2,7 @@ import axios from 'axios';
 import { apiPost } from '../apiconfig';
 
 export interface LoginRequest {
-  cedula: string;
+  correo: string;
   password: string;
 }
 
@@ -22,8 +22,8 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE_KEY);
 }
 
-export async function login(cedula: string, password: string): Promise<LoginResponse> {
-  const body: LoginRequest = { cedula, password };
+export async function login(correo: string, password: string): Promise<LoginResponse> {
+  const body: LoginRequest = { correo, password };
 
   try {
     const data = await apiPost<LoginResponse>('auth/login', body);
@@ -35,7 +35,7 @@ export async function login(cedula: string, password: string): Promise<LoginResp
     if (axios.isAxiosError(error)) {
       const message =
         error.response?.data?.message ||
-        (error.response?.status === 401 ? 'Cédula o contraseña incorrectos.' : 'Error al iniciar sesión.');
+        (error.response?.status === 401 ? 'Correo o contraseña incorrectos.' : 'Error al iniciar sesión.');
       throw new Error(message);
     }
     throw error instanceof Error ? error : new Error('Error de conexión.');

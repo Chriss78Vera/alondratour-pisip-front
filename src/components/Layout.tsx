@@ -1,20 +1,22 @@
 import React from 'react';
-import { Home, Package, LogOut } from 'lucide-react';
+import { Home, Package, Users, LogOut } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentPage: 'home' | 'packages';
-  onNavigate: (page: 'home' | 'packages') => void;
+  currentPage: 'home' | 'packages' | 'usuarios';
+  onNavigate: (page: 'home' | 'packages' | 'usuarios') => void;
   onLogout: () => void | Promise<void>;
+  userRol?: string | null;
 }
 
-export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutProps) {
+export function Layout({ children, currentPage, onNavigate, onLogout, userRol }: LayoutProps) {
+  const isAdmin = userRol === 'Admin';
   return (
     <div className="flex h-screen bg-white">
       {/* Sidebar */}
       <aside className="w-64 bg-[#1e3a8a] text-white flex flex-col">
         <div className="p-6 border-b border-[#1e40af]">
-          <h1 className="text-lg text-white font-medium">Aloundra Tour Admin</h1>
+          <h1 className="text-lg text-white font-medium">Alondra Tour Admin</h1>
         </div>
 
         <nav className="flex-1 p-4">
@@ -41,6 +43,20 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
             <Package className="h-5 w-5" />
             <span>Paquetes</span>
           </button>
+
+          {isAdmin && (
+            <button
+              onClick={() => onNavigate('usuarios')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors mt-2 ${
+                currentPage === 'usuarios'
+                  ? 'bg-[#2563eb] text-white'
+                  : 'text-blue-100 hover:bg-[#1e40af]'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Usuarios</span>
+            </button>
+          )}
         </nav>
 
         <div className="p-4 border-t border-[#1e40af]">
@@ -55,7 +71,7 @@ export function Layout({ children, currentPage, onNavigate, onLogout }: LayoutPr
 
         <div className="p-4 pt-2 border-t border-[#1e40af]">
           <p className="text-xs text-blue-200 text-center">
-            © 2026 - Aloundra Software
+            © 2026 - Alondra Software
           </p>
         </div>
       </aside>
