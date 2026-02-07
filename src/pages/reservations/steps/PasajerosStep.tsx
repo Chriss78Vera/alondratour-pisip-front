@@ -3,7 +3,7 @@ import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
 import { Checkbox } from '../../../components/ui/checkbox';
 import type { Pasajero } from './types';
-import { hasMinLength, isValidCedula, isValidFechaNacimiento, CEDULA_LENGTH } from '../../../utils/validations';
+import { hasMinLength, isValidCedula, isValidFechaNacimiento, CEDULA_LENGTH, MIN_TEXT_LENGTH } from '../../../utils/validations';
 
 interface PasajerosStepProps {
   passengers: Pasajero[];
@@ -59,7 +59,7 @@ export function PasajerosStep({
               />
               {pasajero.nombre.trim() !== '' && !hasMinLength(pasajero.nombre) && (
                 <p className="mt-1 text-sm font-bold text-red-700">
-                  El nombre debe tener al menos 5 caracteres.
+                  El nombre debe tener al menos {MIN_TEXT_LENGTH} caracteres.
                 </p>
               )}
             </div>
@@ -76,7 +76,7 @@ export function PasajerosStep({
               />
               {pasajero.apellido.trim() !== '' && !hasMinLength(pasajero.apellido) && (
                 <p className="mt-1 text-sm font-bold text-red-700">
-                  El apellido debe tener al menos 5 caracteres.
+                  El apellido debe tener al menos {MIN_TEXT_LENGTH} caracteres.
                 </p>
               )}
             </div>

@@ -48,7 +48,7 @@ export function isValidTelefono(telefono: string): boolean {
 }
 
 /** Longitud mínima para nombre y descripción (paquetes, hoteles). */
-export const MIN_TEXT_LENGTH = 5;
+export const MIN_TEXT_LENGTH = 3;
 
 /**
  * Valida que un texto tenga al menos la longitud mínima indicada.
@@ -110,27 +110,106 @@ export function isValidFechaNacimiento(fecha: string): FechaNacimientoResult {
   return { valid: true };
 }
 
+/** Indica bajo qué campo mostrar el error de validación de fechas de vuelo */
+export type FechasVueloErrorField = 'salida' | 'llegada';
+
 /**
- * Valida fechas de vuelo: fecha de salida no puede ser anterior a hoy; fecha de llegada debe ser superior a fecha de salida.
+ * Valida fechas de vuelo:
+ * - Fecha de salida: >= hoy, <= fechaFinPaquete (si se indica).
+ * - Fecha de llegada: > fecha de salida, <= fechaFinPaquete (si se indica).
+ * Devuelve `field` para mostrar el error bajo el campo correcto.
  */
-export function isValidFechasVuelo(fechaSalida: string, fechaLlegada: string): { valid: boolean; error?: string } {
+export function isValidFechasVuelo(
+  fechaSalida: string,
+  fechaLlegada: string,
+  fechaFinPaquete?: string
+): { valid: boolean; error?: string; field?: FechasVueloErrorField } {
   if (!fechaSalida || !fechaLlegada) {
-    return { valid: false, error: 'Las fechas de salida y llegada son obligatorias.' };
+    return { valid: false, error: 'Las fechas de salida y llegada son obligatorias.', field: 'salida' };
   }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const salida = new Date(fechaSalida);
-  const llegada = new Date(fechaLlegada);
-  if (Number.isNaN(salida.getTime()) || Number.isNaN(llegada.getTime())) {
-    return { valid: false, error: 'Fechas no válidas.' };
+  const salida = parseDateOnly(fechaSalida);
+  const llegada = parseDateOnly(fechaLlegada);
+  if (!salida || !llegada) {
+    return { valid: false, error: 'Fechas no válidas.', field: 'salida' };
   }
-  salida.setHours(0, 0, 0, 0);
-  llegada.setHours(0, 0, 0, 0);
   if (salida < today) {
-    return { valid: false, error: 'La fecha de salida no puede ser anterior a la fecha actual.' };
+    return { valid: false, error: 'La fecha de salida no puede ser anterior a la fecha actual.', field: 'salida' };
   }
   if (llegada <= salida) {
-    return { valid: false, error: 'La fecha de llegada debe ser superior a la fecha de salida.' };
+    return { valid: false, error: 'La fecha de llegada debe ser posterior a la fecha de salida.', field: 'llegada' };
+  }
+  if (fechaFinPaquete) {
+    const finPaquete = parseDateOnly(fechaFinPaquete);
+    if (finPaquete) {
+      if (salida > finPaquete) {
+        return { valid: false, error: 'La fecha de salida no puede ser superior a la fecha final del paquete.', field: 'salida' };
+      }
+      if (llegada > finPaquete) {
+        return { valid: false, error: 'La fecha de llegada no puede ser superior a la fecha final del paquete.', field: 'llegada' };
+      }
+    }
   }
   return { valid: true };
+}
+
+/**
+ * Valida fechas de check-in y check-out de un hotel en una reserva:
+ * - Check-in: >= hoy, dentro del rango [fechaInicioPaquete, fechaFinPaquete].
+ * - Check-out: > check-in, >= hoy, dentro del rango del paquete.
+ */
+export function isValidFechasHotelReserva(
+  fechaCheckin: string,
+  fechaCheckout: string,
+  fechaInicioPaquete: string,
+  fechaFinPaquete: string
+): { valid: boolean; error?: string; field?: 'checkin' | 'checkout' } {
+  if (!fechaCheckin || !fechaCheckout) {
+    return { valid: false, error: 'Las fechas de check-in y check-out son obligatorias.', field: 'checkin' };
+  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const checkin = parseDateOnly(fechaCheckin);
+  const checkout = parseDateOnly(fechaCheckout);
+  const inicio = parseDateOnly(fechaInicioPaquete);
+  const fin = parseDateOnly(fechaFinPaquete);
+  if (!checkin || !checkout) {
+    return { valid: false, error: 'Fechas no válidas.', field: 'checkin' };
+  }
+  if (!inicio || !fin) {
+    return { valid: false, error: 'Rango del paquete no válido.', field: 'checkin' };
+  }
+  if (checkin < today) {
+    return { valid: false, error: 'La fecha de check-in no puede ser anterior a la fecha actual.', field: 'checkin' };
+  }
+  if (checkin < inicio || checkin > fin) {
+    return { valid: false, error: 'La fecha de check-in debe estar dentro del rango del paquete.', field: 'checkin' };
+  }
+  if (checkout <= checkin) {
+    return { valid: false, error: 'La fecha de check-out debe ser posterior a la fecha de check-in.', field: 'checkout' };
+  }
+  if (checkout < today) {
+    return { valid: false, error: 'La fecha de check-out no puede ser anterior a la fecha actual.', field: 'checkout' };
+  }
+  if (checkout < inicio || checkout > fin) {
+    return { valid: false, error: 'La fecha de check-out debe estar dentro del rango del paquete.', field: 'checkout' };
+  }
+  return { valid: true };
+}
+
+/**
+ * Parsea una fecha en formato YYYY-MM-DD a Date a medianoche en hora local (evita problemas de zona horaria).
+ */
+function parseDateOnly(isoDate: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const month = parseInt(m, 10) - 1;
+  const day = parseInt(d, 10);
+  const year = parseInt(y, 10);
+  if (month < 0 || month > 11 || day < 1 || day > 31) return null;
+  const date = new Date(year, month, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) return null;
+  return date;
 }

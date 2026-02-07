@@ -9,13 +9,14 @@ export interface UsuarioInfo {
   estado?: boolean;
 }
 
-/** Usuario tal como lo devuelve GET /api/usuarios */
+/** Usuario tal como lo devuelve GET /api/usuarios o respuesta de crear */
 export interface Usuario {
   idUsuario: number;
   nombre: string;
   cedula: string;
   correo: string;
   rol: string;
+  idRol?: number;
   estado?: boolean;
 }
 
@@ -25,7 +26,8 @@ export interface UsuarioActualizarInput {
   nombre: string;
   cedula: string;
   correo: string;
-  rol: string;
+  rol?: string;
+  idRol?: number;
   password?: string;
   estado: boolean;
 }
@@ -55,18 +57,19 @@ export async function actualizarUsuario(input: UsuarioActualizarInput): Promise<
   return apiPost<Usuario>('usuarios/actualizar', input);
 }
 
-/** Body para crear usuario (POST /api/usuarios, si existe) */
+/** Body para crear usuario. POST /api/usuarios */
 export interface UsuarioCrearInput {
+  idUsuario: number;
   nombre: string;
   cedula: string;
   correo: string;
-  rol: string;
+  idRol: number;
   password: string;
   estado: boolean;
 }
 
 /**
- * Crea un usuario. POST /api/usuarios (si el backend lo expone).
+ * Crea un usuario. POST /api/usuarios
  */
 export async function createUsuario(input: UsuarioCrearInput): Promise<Usuario> {
   return apiPost<Usuario>('usuarios', input);

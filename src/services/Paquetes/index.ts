@@ -1,6 +1,7 @@
 export {
   getAllPaquetes,
   getPaisesYCiudadesDistintos,
+  getPaisesConCiudades,
   buscarPaquetesPorPaisYCiudad,
   createPaquetesDetalles,
   createHotel,
@@ -15,4 +16,6 @@ export {
   type PaqueteCreateInput,
   type PaisesYCiudadesDistintosResponse,
   type PaqueteResumen,
+  type PaisConCiudades,
+  type CiudadDestino,
 } from './paquetesService';

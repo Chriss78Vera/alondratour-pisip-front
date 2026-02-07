@@ -113,8 +113,8 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
       editarExtrasVuelo({
         idVuelo: vuelo.idVuelo,
         aerolinea: vuelo.aerolinea,
-        origen: vuelo.origen,
-        destino: vuelo.destino,
+        origen: '',
+        destino: `${vuelo.nombreCiudadDestino}, ${vuelo.nombrePaisDestino}`,
         fechaSalida: vuelo.fechaSalida,
         fechaLlegada: vuelo.fechaLlegada,
         fechaExtraSalida: fechaExcepcionalSalida || vuelo.fechaLlegada,
@@ -203,11 +203,11 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
                 <div className="flex flex-wrap gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
-                    <p className="text-gray-900">{paquete.ciudad}</p>
+                    <p className="text-gray-900">{paquete.nombreCiudad}</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">País</label>
-                    <p className="text-gray-900">{paquete.pais}</p>
+                    <p className="text-gray-900">{paquete.nombrePais}</p>
                   </div>
                 </div>
                 {paquete.estado !== undefined && (
@@ -321,12 +321,8 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
                   </div>
                   <div className="flex flex-wrap gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Origen</label>
-                      <p className="text-gray-900">{vuelo.origen}</p>
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Destino</label>
-                      <p className="text-gray-900">{vuelo.destino}</p>
+                      <p className="text-gray-900">{vuelo.nombreCiudadDestino}, {vuelo.nombrePaisDestino}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-6">
