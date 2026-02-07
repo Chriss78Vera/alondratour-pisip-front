@@ -38,7 +38,7 @@ export async function getAllPaquetes(): Promise<Paquete[]> {
   return Array.isArray(data) ? data : [];
 }
 
-/** Respuesta de GET /api/paquetes/paisesYCiudadesDistintos */
+/** Respuesta de GET /api/paquetes/paisesYCiudadesDistintos (formato anterior) */
 export interface PaisesYCiudadesDistintosResponse {
   paises: string[];
   ciudades: string[];
@@ -54,6 +54,28 @@ export async function getPaisesYCiudadesDistintos(): Promise<PaisesYCiudadesDist
     paises: Array.isArray(data?.paises) ? data.paises : [],
     ciudades: Array.isArray(data?.ciudades) ? data.ciudades : [],
   };
+}
+
+/** Ciudad dentro de un país (para reservas) */
+export interface CiudadDestino {
+  idCiudad: number;
+  nombre: string;
+}
+
+/** País con sus ciudades (respuesta del servicio de destinos para reservas) */
+export interface PaisConCiudades {
+  idPais: number;
+  pais: string;
+  ciudades: CiudadDestino[];
+}
+
+/**
+ * Obtiene países con sus ciudades para el paso de destino en reservas.
+ * GET /api/paquetes/paisesYCiudadesDistintos (respuesta: array de PaisConCiudades)
+ */
+export async function getPaisesConCiudades(): Promise<PaisConCiudades[]> {
+  const data = await apiGet<PaisConCiudades[]>('paquetes/paisesYCiudadesDistintos');
+  return Array.isArray(data) ? data : [];
 }
 
 /**
@@ -72,16 +94,16 @@ export interface PaqueteResumen {
 }
 
 /**
- * Busca paquetes por país y ciudad para el selector de paquetes.
- * GET /api/paquetes/buscarPorPaisYCiudad
+ * Busca paquetes por id de país e id de ciudad.
+ * GET /api/paquetes/buscarPorPaisYCiudad?idPais={idPais}&idCiudad={idCiudad}
  */
 export async function buscarPaquetesPorPaisYCiudad(
-  pais: string,
-  ciudad: string
+  idPais: number,
+  idCiudad: number
 ): Promise<PaqueteResumen[]> {
   const data = await apiGet<PaqueteResumen[]>('paquetes/buscarPorPaisYCiudad', {
-    pais,
-    ciudad,
+    idPais,
+    idCiudad,
   });
   return Array.isArray(data) ? data : [];
 }
@@ -141,8 +163,9 @@ export interface PaqueteCreateInput {
   idPaquetesDetalles: number;
   nombre: string;
   descripcion: string;
-  pais: string;
-  ciudad: string;
+  idPais: number;
+  idCiudad: number;
+  estado: boolean;
 }
 
 /**
@@ -155,9 +178,9 @@ export async function createPaquete(input: Omit<PaqueteCreateInput, 'idPaquete'>
     idPaquetesDetalles: input.idPaquetesDetalles,
     nombre: input.nombre,
     descripcion: input.descripcion ?? '',
-    pais: input.pais,
-    ciudad: input.ciudad,
-    estado: true,
+    idPais: input.idPais,
+    idCiudad: input.idCiudad,
+    estado: input.estado ?? true,
   });
 }
 

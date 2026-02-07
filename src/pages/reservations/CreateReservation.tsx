@@ -4,10 +4,10 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Stepper } from '../../components/Stepper';
 import {
-  getPaisesYCiudadesDistintos,
+  getPaisesConCiudades,
   buscarPaquetesPorPaisYCiudad,
   type PaqueteResumen,
-  type PaisesYCiudadesDistintosResponse,
+  type PaisConCiudades,
 } from '../../services/paquetes';
 import { getToken } from '../../services/oauth';
 import { getUserInformation, type UsuarioInfo } from '../../services/usuarios';
@@ -24,6 +24,7 @@ import {
   isValidCedula,
   isValidFechaNacimiento,
   isValidFechasVuelo,
+  isValidFechasHotelReserva,
 } from '../../utils/validations';
 import {
   DestinoStep,
@@ -46,19 +47,21 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [showResult, setShowResult] = useState<'success' | 'error' | null>(null);
 
-  const [paises, setPaises] = useState<string[]>([]);
-  const [ciudades, setCiudades] = useState<string[]>([]);
+  const [paisesConCiudades, setPaisesConCiudades] = useState<PaisConCiudades[]>([]);
   const [paquetesDisponibles, setPaquetesDisponibles] = useState<PaqueteResumen[]>([]);
   const [loadingPaisesCiudades, setLoadingPaisesCiudades] = useState(true);
   const [loadingPaquetes, setLoadingPaquetes] = useState(false);
 
   const [destination, setDestination] = useState({
+    idPais: '' as string,
+    idCiudad: '' as string,
     country: '',
     city: '',
     package: '',
     hotel: '',
     startDate: '',
     endDate: '',
+    hotelesReserva: [] as { idHotel: string; fechaCheckin: string; fechaCheckout: string }[],
   });
 
   const [agent, setAgent] = useState<AgentState>({
@@ -71,7 +74,10 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
 
   const [vuelo, setVuelo] = useState({
     aerolinea: '',
-    origen: '',
+    idPaisOrigen: '',
+    idCiudadOrigen: '',
+    origenPaisNombre: '',
+    origenCiudadNombre: '',
     fechaSalida: '',
     fechaLlegada: '',
     fechaExtraSalida: '',
@@ -91,15 +97,9 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
       : null;
 
   useEffect(() => {
-    getPaisesYCiudadesDistintos()
-      .then((r: PaisesYCiudadesDistintosResponse) => {
-        setPaises(r.paises);
-        setCiudades(r.ciudades);
-      })
-      .catch(() => {
-        setPaises([]);
-        setCiudades([]);
-      })
+    getPaisesConCiudades()
+      .then(setPaisesConCiudades)
+      .catch(() => setPaisesConCiudades([]))
       .finally(() => setLoadingPaisesCiudades(false));
   }, []);
 
@@ -115,52 +115,71 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
   }, []);
 
   useEffect(() => {
-    if (destination.country && destination.city) {
+    if (destination.idPais && destination.idCiudad) {
       setLoadingPaquetes(true);
-      buscarPaquetesPorPaisYCiudad(destination.country, destination.city)
+      buscarPaquetesPorPaisYCiudad(Number(destination.idPais), Number(destination.idCiudad))
         .then(setPaquetesDisponibles)
         .catch(() => setPaquetesDisponibles([]))
         .finally(() => setLoadingPaquetes(false));
     } else {
       setPaquetesDisponibles([]);
     }
-  }, [destination.country, destination.city]);
+  }, [destination.idPais, destination.idCiudad]);
 
   useEffect(() => {
-    setDestination((prev) => ({ ...prev, city: '', package: '' }));
-  }, [destination.country]);
+    setDestination((prev) => ({ ...prev, idCiudad: '', city: '', package: '', hotel: '', hotelesReserva: [] }));
+  }, [destination.idPais]);
 
   useEffect(() => {
-    setDestination((prev) => ({ ...prev, package: '', hotel: '' }));
-  }, [destination.city]);
+    setDestination((prev) => ({ ...prev, package: '', hotel: '', hotelesReserva: [] }));
+  }, [destination.idCiudad]);
 
   useEffect(() => {
-    setDestination((prev) => ({ ...prev, hotel: '' }));
+    setDestination((prev) => ({ ...prev, hotel: '', hotelesReserva: [] }));
   }, [destination.package]);
 
   useEffect(() => {
     if (selectedPaqueteResumen?.paquetesDetalles) {
+      const hoteles = selectedPaqueteResumen.hoteles ?? [];
+      const hotelesReserva =
+        hoteles.length === 1
+          ? [{ idHotel: String(hoteles[0].idHotel), fechaCheckin: '', fechaCheckout: '' }]
+          : [];
       setDestination((prev) => ({
         ...prev,
         startDate: selectedPaqueteResumen.paquetesDetalles!.fechaInicio,
         endDate: selectedPaqueteResumen.paquetesDetalles!.fechaFin,
+        hotelesReserva,
       }));
     }
   }, [destination.package]);
 
   const requiereHotel =
     selectedPaqueteResumen?.hoteles && selectedPaqueteResumen.hoteles.length > 0;
+  const hotelesReservaValid =
+    !requiereHotel ||
+    ((destination.hotelesReserva?.length ?? 0) >= 1 &&
+      destination.hotelesReserva?.every(
+        (hr) =>
+          hr.fechaCheckin &&
+          hr.fechaCheckout &&
+          destination.startDate &&
+          destination.endDate &&
+          isValidFechasHotelReserva(hr.fechaCheckin, hr.fechaCheckout, destination.startDate, destination.endDate).valid
+      ));
   const isStep1Valid =
-    destination.country &&
-    destination.city &&
+    destination.idPais &&
+    destination.idCiudad &&
     destination.package &&
     destination.startDate &&
     destination.endDate &&
-    (!requiereHotel || !!destination.hotel);
+    (!requiereHotel || hotelesReservaValid);
+
   const isStep2Valid =
     hasMinLength(agent.name) &&
     isValidEmail(agent.email) &&
     isValidTelefono(agent.phone);
+
   const isStep3Valid =
     passengers.length >= 1 &&
     passengers.every(
@@ -173,10 +192,12 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
     );
   const isStep4Valid =
     vuelo.aerolinea.trim() &&
-    vuelo.origen.trim() &&
+    vuelo.idPaisOrigen &&
+    vuelo.idCiudadOrigen &&
     vuelo.fechaSalida &&
     vuelo.fechaLlegada &&
-    isValidFechasVuelo(vuelo.fechaSalida, vuelo.fechaLlegada).valid;
+    isValidFechasVuelo(vuelo.fechaSalida, vuelo.fechaLlegada, destination.endDate).valid;
+    
   const isStep5Valid =
     costoTotal.trim() !== '' &&
     !Number.isNaN(Number(costoTotal.replace(/,/g, '.'))) &&
@@ -205,8 +226,8 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
     try {
       const vueloCreado = await createVuelo({
         aerolinea: vuelo.aerolinea,
-        origen: vuelo.origen,
-        destino: destination.country,
+        idPaisDestino: Number(destination.idPais),
+        idCiudadDestino: Number(destination.idCiudad),
         fechaSalida: vuelo.fechaSalida,
         fechaLlegada: vuelo.fechaLlegada,
         fechaExtraSalida: vuelo.fechaExtraSalida || null,
@@ -242,12 +263,12 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
           visa: p.visa,
         });
       }
-      if (destination.hotel) {
+      for (const hr of destination.hotelesReserva ?? []) {
         await createHotelReserva({
           idReserva: reservaCreada.idReserva,
-          idHotel: Number(destination.hotel),
-          fechaCheckin: destination.startDate,
-          fechaCheckout: destination.endDate,
+          idHotel: Number(hr.idHotel),
+          fechaCheckin: hr.fechaCheckin,
+          fechaCheckout: hr.fechaCheckout,
           fechaExtraCheckin: null,
           fechaExtraCheckout: null,
         });
@@ -331,8 +352,7 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
       case 0:
         return (
           <DestinoStep
-            paises={paises}
-            ciudades={ciudades}
+            paisesConCiudades={paisesConCiudades}
             paquetesDisponibles={paquetesDisponibles}
             loadingPaisesCiudades={loadingPaisesCiudades}
             loadingPaquetes={loadingPaquetes}
@@ -357,7 +377,9 @@ export function CreateReservation({ onBack }: CreateReservationProps) {
           <VuelosStep
             vuelo={vuelo}
             setVuelo={setVuelo}
-            destinoBloqueado={destination.country}
+            destination={destination}
+            fechaInicioPaquete={destination.startDate}
+            fechaFinPaquete={destination.endDate}
           />
         );
       case 4:

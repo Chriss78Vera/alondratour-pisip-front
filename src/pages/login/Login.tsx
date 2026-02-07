@@ -13,7 +13,7 @@ interface LoginProps {
 }
 
 export function Login({ onLoginSuccess }: LoginProps) {
-  const [cedula, setCedula] = useState('');
+  const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +21,13 @@ export function Login({ onLoginSuccess }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!cedula.trim() || !password.trim()) {
-      setError('Ingrese cédula y contraseña.');
+    if (!correo.trim() || !password.trim()) {
+      setError('Ingrese correo electrónico y contraseña.');
       return;
     }
     setLoading(true);
     try {
-      await login(cedula.trim(), password);
+      await login(correo.trim(), password);
       onLoginSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al iniciar sesión.');
@@ -56,21 +56,21 @@ export function Login({ onLoginSuccess }: LoginProps) {
             <h2 className="text-xl font-semibold text-[#1e40af]">Iniciar sesión</h2>
           </div>
           <p className="text-gray-600 text-sm mb-6">
-            Ingrese su cédula y contraseña para acceder a la plataforma.
+            Ingrese su correo electrónico y contraseña para acceder a la plataforma.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block mb-2 text-gray-700 text-sm font-medium">
-                Cédula <span className="text-red-500">*</span>
+                Correo electrónico <span className="text-red-500">*</span>
               </label>
               <Input
-                type="text"
-                placeholder="Cédula"
-                value={cedula}
-                onChange={(e) => setCedula(e.target.value)}
+                type="email"
+                placeholder="ejemplo@correo.com"
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
                 className="border-gray-300 bg-white"
-                autoComplete="username"
+                autoComplete="email"
                 disabled={loading}
               />
             </div>

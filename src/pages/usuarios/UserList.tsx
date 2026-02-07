@@ -114,46 +114,6 @@ export function UserList(_props: UserListProps) {
         <p className="text-gray-600">Administra los usuarios de la plataforma</p>
       </div>
 
-      <Card className="p-6 mb-6 bg-white border-gray-200">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block mb-2 text-gray-700">Buscar usuarios</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Buscar por nombre, cédula, correo o rol..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 border-gray-300 bg-white"
-              />
-            </div>
-          </div>
-          <Button
-            onClick={() => {
-              setIsCreating(true);
-              setSelectedUser(null);
-            }}
-            className="bg-[#1e40af] hover:bg-[#1e3a8a] text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Crear usuario
-          </Button>
-        </div>
-      </Card>
-
-      {noHayDatos && (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-          <p className="text-gray-600">No hay usuarios registrados.</p>
-        </div>
-      )}
-
-      {noHayResultadosFiltro && (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-          <p className="text-gray-600">No se encontraron usuarios con los filtros aplicados.</p>
-        </div>
-      )}
-
       {(selectedUser || isCreating) && (
         <EditUser
           user={selectedUser}
@@ -171,6 +131,46 @@ export function UserList(_props: UserListProps) {
 
       {!loading && filteredUsers.length > 0 && !selectedUser && !isCreating && (
         <>
+          <Card className="p-6 mb-6 bg-white border-gray-200">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div className="flex-1 min-w-[200px]">
+                <label className="block mb-2 text-gray-700">Buscar usuarios</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nombre, cédula, correo o rol..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 border-gray-300 bg-white"
+                  />
+                </div>
+              </div>
+              <Button
+                onClick={() => {
+                  setIsCreating(true);
+                  setSelectedUser(null);
+                }}
+                className="bg-[#1e40af] hover:bg-[#1e3a8a] text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Crear usuario
+              </Button>
+            </div>
+          </Card>
+
+          {noHayDatos && (
+            <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
+              <p className="text-gray-600">No hay usuarios registrados.</p>
+            </div>
+          )}
+
+          {noHayResultadosFiltro && (
+            <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
+              <p className="text-gray-600">No se encontraron usuarios con los filtros aplicados.</p>
+            </div>
+          )}
+
           <div className="rounded-lg overflow-x-auto border border-gray-200 bg-white shadow-sm min-w-0">
             <Table className="text-sm">
               <TableHeader>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '../../components/ui/select';
 import { actualizarUsuario, createUsuario, type Usuario } from '../../services/usuarios';
+import { getRoles, type Rol } from '../../services/rol';
 import { isValidEmail, isValidCedula, CEDULA_LENGTH } from '../../utils/validations';
 
 interface EditUserProps {
@@ -20,15 +21,32 @@ interface EditUserProps {
   onCancel: () => void;
 }
 
-const ROLES = ['Admin', 'Agente'] as const;
-
 export function EditUser({ user, onSave, onCancel }: EditUserProps) {
   const isNew = user == null;
+  const [roles, setRoles] = useState<Rol[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(true);
   const [nombre, setNombre] = useState(user?.nombre ?? '');
   const [cedula, setCedula] = useState(user?.cedula ?? '');
   const [correo, setCorreo] = useState(user?.correo ?? '');
-  const [rol, setRol] = useState(user?.rol ?? 'Agente');
+  const [idRol, setIdRol] = useState<number | ''>(user?.idRol ?? '');
   const [estado, setEstado] = useState(user?.estado !== false);
+
+  useEffect(() => {
+    getRoles()
+      .then(setRoles)
+      .catch(() => setRoles([]))
+      .finally(() => setLoadingRoles(false));
+  }, []);
+
+  useEffect(() => {
+    if (user != null) {
+      const resolved = user.idRol ?? roles.find((r) => r.tipo === user.rol)?.idRol ?? '';
+      setIdRol(resolved !== undefined ? resolved : '');
+    } else if (roles.length > 0 && idRol === '') {
+      setIdRol(roles[0].idRol);
+    }
+  }, [user?.idUsuario, user?.rol, user?.idRol, roles]);
+
   const [nuevaPassword, setNuevaPassword] = useState('');
   const [repetirPassword, setRepetirPassword] = useState('');
   const [saving, setSaving] = useState(false);
@@ -68,21 +86,29 @@ export function EditUser({ user, onSave, onCancel }: EditUserProps) {
           setSaving(false);
           return;
         }
+        const rolId = idRol !== '' ? Number(idRol) : roles[0]?.idRol;
+        if (rolId == null) {
+          setError('Seleccione un rol.');
+          setSaving(false);
+          return;
+        }
         await createUsuario({
+          idUsuario: 0,
           nombre: nombre.trim(),
           cedula: cedula.trim(),
           correo: correo.trim(),
-          rol,
+          idRol: rolId,
           password: nuevaPassword,
           estado,
         });
       } else {
+        const rolId = idRol !== '' ? Number(idRol) : user?.idRol ?? roles.find((r) => r.tipo === user?.rol)?.idRol;
         await actualizarUsuario({
           idUsuario: user!.idUsuario,
           nombre: nombre.trim(),
           cedula: cedula.trim(),
           correo: correo.trim(),
-          rol,
+          idRol: rolId,
           password: nuevaPassword || undefined,
           estado,
         });
@@ -112,7 +138,7 @@ export function EditUser({ user, onSave, onCancel }: EditUserProps) {
               estado ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {estado ? 'Desactivar usuario' : 'Activar usuario'}
+            {isNew ? 'Crear usuario' : estado ? 'Desactivar usuario' : 'Activar usuario'}
           </button>
           <Button variant="outline" className="border-gray-300 text-gray-700" onClick={onCancel}>
             Volver
@@ -151,18 +177,23 @@ export function EditUser({ user, onSave, onCancel }: EditUserProps) {
             onChange={(e) => setCorreo(e.target.value)}
             className="mt-1 border-gray-300"
             required
+            disabled={!isNew}
           />
         </div>
         <div>
           <Label>Rol *</Label>
-          <Select value={rol} onValueChange={setRol}>
+          <Select
+            value={idRol !== '' ? String(idRol) : ''}
+            onValueChange={(v) => setIdRol(v === '' ? '' : Number(v))}
+            disabled={loadingRoles}
+          >
             <SelectTrigger className="mt-1 border-gray-300">
-              <SelectValue />
+              <SelectValue placeholder={loadingRoles ? 'Cargando roles...' : 'Seleccione un rol'} />
             </SelectTrigger>
             <SelectContent>
-              {ROLES.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {r}
+              {roles.map((r) => (
+                <SelectItem key={r.idRol} value={String(r.idRol)}>
+                  {r.tipo}
                 </SelectItem>
               ))}
             </SelectContent>

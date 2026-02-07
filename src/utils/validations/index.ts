@@ -10,5 +10,6 @@ export {
   isValidTelefono,
   isValidFechaNacimiento,
   isValidFechasVuelo,
+  isValidFechasHotelReserva,
   type FechaNacimientoResult,
 } from './dataValidations';

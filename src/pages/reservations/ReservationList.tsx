@@ -54,7 +54,7 @@ export function ReservationList({ onCreateNew }: ReservationListProps) {
     () =>
       reservations.filter((r) => {
         const texto =
-          `${r.paquete.nombre} ${r.paquete.ciudad} ${r.paquete.pais} ${r.agencia.nombre}`.toLowerCase();
+          `${r.paquete.nombre} ${r.paquete.nombreCiudad} ${r.paquete.nombrePais} ${r.agencia.nombre}`.toLowerCase();
         const matchesSearch = !searchTerm || texto.includes(searchTerm.toLowerCase());
         const matchesDate = !dateFilter || r.fechaReserva.includes(dateFilter);
         return matchesSearch && matchesDate;
@@ -178,8 +178,8 @@ export function ReservationList({ onCreateNew }: ReservationListProps) {
                 <TableCell className="text-left py-3 px-4 align-middle max-w-[140px] border-r border-gray-200" title={r.paquete.descripcion || ''}>
                   {truncate(r.paquete.descripcion, MAX_DESC_LENGTH)}
                 </TableCell>
-                <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">{r.paquete.ciudad}</TableCell>
-                <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">{r.paquete.pais}</TableCell>
+                <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">{r.paquete.nombreCiudad}</TableCell>
+                <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">{r.paquete.nombrePais}</TableCell>
                 <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">{r.fechaReserva}</TableCell>
                 <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">{formatNumber(r.costoTotal)}</TableCell>
                 <TableCell className="text-center py-3 px-4 align-middle border-r border-gray-200">

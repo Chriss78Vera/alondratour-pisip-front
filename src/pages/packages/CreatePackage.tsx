@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, X, CheckCircle } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Card } from '../../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog';
+import { SelectWithSearch, type SelectOption } from '../../components/SelectWithSearch';
 import {
   createPaquetesDetalles,
   createHotel,
   createPaquete,
 } from '../../services/paquetes';
+import { getPaises, type Pais } from '../../services/paises';
+import { getCiudadesPorPais, type Ciudad } from '../../services/ciudades';
 import { hasMinLength, isPrecioMayorQueCero, MIN_TEXT_LENGTH } from '../../utils/validations';
+import { addDays, todayStr } from '../../utils/dateFormats';
 
 interface CreatePackageProps {
   onBack: () => void;
@@ -18,13 +22,37 @@ interface CreatePackageProps {
 
 export function CreatePackage({ onBack }: CreatePackageProps) {
   const [formData, setFormData] = useState({
-    country: '',
-    city: '',
     name: '',
     description: '',
     fechaInicio: '',
     fechaFin: '',
   });
+  const [paises, setPaises] = useState<Pais[]>([]);
+  const [ciudades, setCiudades] = useState<Ciudad[]>([]);
+  const [selectedPais, setSelectedPais] = useState<Pais | null>(null);
+  const [selectedCiudad, setSelectedCiudad] = useState<Ciudad | null>(null);
+  const [loadingPaises, setLoadingPaises] = useState(true);
+  const [loadingCiudades, setLoadingCiudades] = useState(false);
+
+  useEffect(() => {
+    getPaises()
+      .then(setPaises)
+      .catch(() => setPaises([]))
+      .finally(() => setLoadingPaises(false));
+  }, []);
+
+  useEffect(() => {
+    if (selectedPais) {
+      setLoadingCiudades(true);
+      setSelectedCiudad(null);
+      getCiudadesPorPais(selectedPais.idPais)
+        .then(setCiudades)
+        .catch(() => setCiudades([]))
+        .finally(() => setLoadingCiudades(false));
+    } else {
+      setCiudades([]);
+    }
+  }, [selectedPais]);
 
   type HotelEntry = { nombre: string; precio: string };
   const [hotels, setHotels] = useState<HotelEntry[]>([]);
@@ -34,13 +62,37 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const today = todayStr();
+  const minFechaFin = formData.fechaInicio
+    ? (() => {
+        const inicioMas3 = addDays(formData.fechaInicio, 3);
+        return inicioMas3 > today ? inicioMas3 : today;
+      })()
+    : '';
+
+  const getFechaFinValidationError = (): string | null => {
+    if (!formData.fechaInicio || !formData.fechaFin) return null;
+    if (formData.fechaFin < formData.fechaInicio) {
+      return 'La fecha fin no puede ser menor a la fecha de inicio.';
+    }
+    if (formData.fechaFin < today) {
+      return 'La fecha fin no puede ser anterior a la fecha actual.';
+    }
+    const inicioMas3 = addDays(formData.fechaInicio, 3);
+    if (formData.fechaFin < inicioMas3) {
+      return 'La fecha fin debe ser al menos 3 días después de la fecha de inicio.';
+    }
+    return null;
+  };
+
   const isFormValid =
-    formData.country &&
-    formData.city &&
+    selectedPais &&
+    selectedCiudad &&
     hasMinLength(formData.name) &&
     (formData.description === '' || hasMinLength(formData.description)) &&
     formData.fechaInicio &&
     formData.fechaFin &&
+    !getFechaFinValidationError() &&
     hotels.length > 0 &&
     hotels.every((h) => hasMinLength(h.nombre) && isPrecioMayorQueCero(h.precio));
 
@@ -67,6 +119,8 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
     if (formData.description.trim() !== '' && !hasMinLength(formData.description)) {
       return `La descripción debe tener al menos ${MIN_TEXT_LENGTH} caracteres.`;
     }
+    const fechaError = getFechaFinValidationError();
+    if (fechaError) return fechaError;
     for (let i = 0; i < hotels.length; i++) {
       if (!hasMinLength(hotels[i].nombre)) {
         return `El nombre del hotel "${hotels[i].nombre || '(sin nombre)'}" debe tener al menos ${MIN_TEXT_LENGTH} caracteres.`;
@@ -109,8 +163,9 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
         idPaquetesDetalles,
         nombre: formData.name,
         descripcion: formData.description || '',
-        pais: formData.country,
-        ciudad: formData.city,
+        idPais: selectedPais.idPais,
+        idCiudad: selectedCiudad.idCiudad,
+        estado: true,
       });
 
       setShowSuccess(true);
@@ -139,31 +194,36 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
       <Card className="max-w-3xl mx-auto p-8 bg-white border-gray-200">
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-2 text-gray-700">
-                País <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="text"
-                placeholder="Ej: Ecuador"
-                value={formData.country}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                className="border-gray-300 bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 text-gray-700">
-                Ciudad <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="text"
-                placeholder="Ej: Quito"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="border-gray-300 bg-white"
-              />
-            </div>
+            <SelectWithSearch
+              label={
+                <>
+                  País <span className="text-red-500">*</span>
+                </>
+              }
+              options={paises.map((p) => ({ value: p.idPais, label: p.nombre }))}
+              value={selectedPais ? { value: selectedPais.idPais, label: selectedPais.nombre } : null}
+              onChange={(opt: SelectOption) => setSelectedPais(paises.find((p) => p.idPais === opt.value) ?? null)}
+              triggerPlaceholder="Buscar país"
+              searchPlaceholder="Buscar país..."
+              emptyMessage="Sin resultados"
+              loading={loadingPaises}
+            />
+            <SelectWithSearch
+              label={
+                <>
+                  Ciudad <span className="text-red-500">*</span>
+                </>
+              }
+              options={ciudades.map((c) => ({ value: c.idCiudad, label: c.nombre }))}
+              value={selectedCiudad ? { value: selectedCiudad.idCiudad, label: selectedCiudad.nombre } : null}
+              onChange={(opt: SelectOption) => setSelectedCiudad(ciudades.find((c) => c.idCiudad === opt.value) ?? null)}
+              triggerPlaceholder="Buscar ciudad"
+              searchPlaceholder="Buscar ciudad..."
+              emptyMessage={ciudades.length === 0 ? 'No hay ciudades' : 'Sin resultados'}
+              disabledPlaceholder="Seleccione primero un país"
+              disabled={!selectedPais}
+              loading={loadingCiudades}
+            />
           </div>
 
           <div>
@@ -199,7 +259,10 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
               <Input
                 type="date"
                 value={formData.fechaInicio}
-                onChange={(e) => setFormData({ ...formData, fechaInicio: e.target.value })}
+                min={today}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, fechaInicio: e.target.value, fechaFin: '' }))
+                }
                 className="border-gray-300 bg-white"
               />
             </div>
@@ -210,10 +273,17 @@ export function CreatePackage({ onBack }: CreatePackageProps) {
               <Input
                 type="date"
                 value={formData.fechaFin}
+                min={minFechaFin || undefined}
                 onChange={(e) => setFormData({ ...formData, fechaFin: e.target.value })}
                 className="border-gray-300 bg-white"
-                min={formData.fechaInicio || undefined}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Mínimo 3 días después del inicio; no puede ser anterior a hoy
+              </p>
+              {(() => {
+                const err = getFechaFinValidationError();
+                return err ? <p className="mt-1 text-sm font-bold text-red-700">{err}</p> : null;
+              })()}
             </div>
           </div>
 
