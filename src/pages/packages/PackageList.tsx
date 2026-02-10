@@ -130,9 +130,8 @@ export function PackageList({ onCreateNew }: PackageListProps) {
           }}
         />
       )}
-      {!loading && filteredPackages.length > 0 && !selectedPackage && (
+      {!selectedPackage && (
         <>
-
           <Card className="p-6 mb-6 bg-white border-gray-200">
             <div className="flex flex-wrap gap-4 items-end">
               <div className="flex-1 min-w-[200px]">
@@ -170,6 +169,8 @@ export function PackageList({ onCreateNew }: PackageListProps) {
               <p className="text-gray-600">No se encontraron paquetes con los filtros aplicados.</p>
             </div>
           )}
+
+          {filteredPackages.length > 0 && (
           <div className="rounded-lg overflow-x-auto border border-gray-200 bg-white shadow-sm min-w-0">
             <Table className="text-sm">
               <TableHeader>
@@ -235,8 +236,9 @@ export function PackageList({ onCreateNew }: PackageListProps) {
               </TableBody>
             </Table>
           </div>
+          )}
 
-          {totalPages > 1 && (
+          {filteredPackages.length > 0 && totalPages > 1 && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
               <p className="text-sm text-gray-600">
                 Mostrando {(currentPage - 1) * ROWS_PER_PAGE + 1} -{' '}
