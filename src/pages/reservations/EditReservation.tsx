@@ -3,7 +3,7 @@ import { Building2, CheckCircle, Plane, Users } from 'lucide-react';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
-import { type ReservaConDetalles } from '../../services/reservas';
+import { desactivarReserva, type ReservaConDetalles } from '../../services/reservas';
 import { getPasajerosPorIdReserva, type PasajeroDetalle } from '../../services/pasajeros';
 import {
   getHotelReservasPorIdReserva,
@@ -32,6 +32,7 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
   );
   const [fechasExtraHotel, setFechasExtraHotel] = useState<Record<number, { checkin: string; checkout: string }>>({});
   const [saving, setSaving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -84,6 +85,30 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
       return checkin !== (hr.fechaExtraCheckin ?? '') || checkout !== (hr.fechaExtraCheckout ?? '');
     });
   const hasChanges = hasVueloChanges || hasHotelChanges;
+
+  async function handleCancelarReserva() {
+    if (!window.confirm('¿Está seguro de cancelar esta reserva? Esta acción no se puede deshacer.')) return;
+    setError(null);
+    setCancelling(true);
+    try {
+      await desactivarReserva({
+        idReserva: reserva.idReserva,
+        idUsuario: reserva.idUsuario,
+        idVuelo: reserva.vuelo.idVuelo,
+        idPaquete: reserva.paquete.idPaquete,
+        idAgencia: reserva.agencia.idAgencia,
+        fechaReserva: reserva.fechaReserva,
+        costoTotal: reserva.costoTotal,
+        estado: false,
+      });
+      onCancel();
+    } catch (e: unknown) {
+      const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: string }).message) : 'Error al cancelar la reserva.';
+      setError(msg);
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   function handleEditar() {
     setError(null);
@@ -164,7 +189,14 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
     <div className="p-6 max-w-6xl mx-auto pb-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-[#1e40af] text-xl font-medium">Detalle de la reserva</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            onClick={handleCancelarReserva}
+            disabled={cancelling || reserva.estado === false}
+            style={{ backgroundColor: reserva.estado === false ? '#6b7280' : 'red' }}
+          >
+            {reserva.estado === false ? 'Reserva cancelada' : cancelling ? 'Cancelando...' : 'Cancelar Reserva'}
+          </Button>
           <Button
             onClick={handleEditar}
             disabled={saving || !hasChanges}
@@ -256,6 +288,7 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
                           Fecha extra checkin
                         </label>
                         <Input
+                          disabled={reserva.estado === false}
                           type="date"
                           min={
                             (() => {
@@ -281,6 +314,7 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
                           Fecha extra checkout
                         </label>
                         <Input
+                          disabled={reserva.estado === false}
                           type="date"
                           min={
                             (() => {
@@ -309,61 +343,63 @@ export function EditReservation({ reserva, onCancel }: EditReservationProps) {
             )}
           </div>
           <div className="flex-1 min-w-0 lg:border-l lg:border-gray-200 lg:pl-6">
-              <h3 className="text-[#1e40af] font-medium mb-3 flex items-center gap-2">
-                <Plane className="h-5 w-5" />
-                Vuelo
-              </h3>
-              <div className="flex flex-col sm:flex-row sm:gap-6 gap-4">
-                <div className="flex-1 min-w-0 space-y-3">
+            <h3 className="text-[#1e40af] font-medium mb-3 flex items-center gap-2">
+              <Plane className="h-5 w-5" />
+              Vuelo
+            </h3>
+            <div className="flex flex-col sm:flex-row sm:gap-6 gap-4">
+              <div className="flex-1 min-w-0 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Aerolínea</label>
+                  <p className="text-gray-900">{vuelo.aerolinea}</p>
+                </div>
+                <div className="flex flex-wrap gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Aerolínea</label>
-                    <p className="text-gray-900">{vuelo.aerolinea}</p>
-                  </div>
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Destino</label>
-                      <p className="text-gray-900">{vuelo.nombreCiudadDestino}, {vuelo.nombrePaisDestino}</p>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha salida</label>
-                      <p className="text-gray-900">{vuelo.fechaSalida}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Fecha llegada</label>
-                      <p className="text-gray-900">{vuelo.fechaLlegada}</p>
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Destino</label>
+                    <p className="text-gray-900">{vuelo.nombreCiudadDestino}, {vuelo.nombrePaisDestino}</p>
                   </div>
                 </div>
-                <div className="flex-1 min-w-0 space-y-3 sm:border-l sm:border-gray-200 sm:pl-6">
+                <div className="flex flex-wrap gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha excepcional salida
-                    </label>
-                    <Input
-                      type="date"
-                      min={minVueloSalida}
-                      value={fechaExcepcionalSalida}
-                      onChange={(e) => setFechaExcepcionalSalida(e.target.value)}
-                      className="border-gray-300 bg-white text-sm"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha salida</label>
+                    <p className="text-gray-900">{vuelo.fechaSalida}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fecha excepcional llegada
-                    </label>
-                    <Input
-                      type="date"
-                      min={minVueloLlegada}
-                      value={fechaExcepcionalLlegada}
-                      onChange={(e) => setFechaExcepcionalLlegada(e.target.value)}
-                      className="border-gray-300 bg-white text-sm"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Fecha llegada</label>
+                    <p className="text-gray-900">{vuelo.fechaLlegada}</p>
                   </div>
                 </div>
               </div>
+              <div className="flex-1 min-w-0 space-y-3 sm:border-l sm:border-gray-200 sm:pl-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha excepcional salida
+                  </label>
+                  <Input
+                    disabled={reserva.estado === false}
+                    type="date"
+                    min={minVueloSalida}
+                    value={fechaExcepcionalSalida}
+                    onChange={(e) => setFechaExcepcionalSalida(e.target.value)}
+                    className="border-gray-300 bg-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fecha excepcional llegada
+                  </label>
+                  <Input
+                    disabled={reserva.estado === false}
+                    type="date"
+                    min={minVueloLlegada}
+                    value={fechaExcepcionalLlegada}
+                    onChange={(e) => setFechaExcepcionalLlegada(e.target.value)}
+                    className="border-gray-300 bg-white text-sm"
+                  />
+                </div>
+              </div>
             </div>
+          </div>
         </Card>
 
         {/* Columna 2: Agencia */}
