@@ -104,3 +104,23 @@ export async function createReserva(input: Omit<ReservaCreateInput, 'idReserva'>
     estado: input.estado,
   });
 }
+
+/** Body para POST /api/reservas/desactivar (cancelar reserva) */
+export interface ReservaDesactivarInput {
+  idReserva: number;
+  idUsuario: number;
+  idVuelo: number;
+  idPaquete: number;
+  idAgencia: number;
+  fechaReserva: string;
+  costoTotal: number;
+  estado: false;
+}
+
+/**
+ * Cancela una reserva (estado = false).
+ * POST /api/reservas/desactivar
+ */
+export async function desactivarReserva(input: ReservaDesactivarInput): Promise<Reserva> {
+  return apiPost<Reserva>('reservas/desactivar', { ...input, estado: false });
+}
